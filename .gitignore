@@ -1,0 +1,58 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+build/
+
+# remotion render output
+/out
+/remotion/out
+
+# production
+/dist
+
+# env files (NEVER commit secrets / license keys)
+.env
+.env.local
+.env.*.local
+
+# database
+*.db
+*.db-journal
+prisma/dev.db
+prisma/dev.db-journal
+
+# local file storage (uploaded rushes / rendered outputs)
+/storage
+/data/storage
+
+# logs
+*.log
+npm-debug.log*
+
+# os
+.DS_Store
+
+# python transcription service
+services/transcription/.venv
+services/transcription/__pycache__
+services/transcription/models
+*.pyc
+
+# misc
+.vercel
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# playwright mcp artifacts
+.playwright-mcp/
+
+# harness state / preview screenshots
+.remember/
+*-redesign.png
+*.tsbuildinfo

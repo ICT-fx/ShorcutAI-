@@ -1,0 +1,52 @@
+{
+  "name": "shortcut-edit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shortcut.Edit — turns rushes + script + preferences into an auto-edited MP4 rendered with Remotion. The editorial brain produces a validated EDL; Remotion renders it.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "next lint",
+    "worker": "tsx watch src/workers/index.ts",
+    "worker:once": "tsx src/workers/index.ts",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "remotion:studio": "remotion studio src/remotion/index.ts",
+    "remotion:render:test": "remotion render src/remotion/index.ts TestCard out/test.mp4",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@prisma/client": "^6.2.1",
+    "@remotion/bundler": "^4.0.250",
+    "@remotion/media-parser": "^4.0.469",
+    "@remotion/player": "^4.0.250",
+    "@remotion/renderer": "^4.0.250",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.106.2",
+    "bullmq": "^5.34.0",
+    "dotenv": "^16.4.7",
+    "groq-sdk": "^0.9.1",
+    "ioredis": "^5.4.2",
+    "next": "^15.1.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.250",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@remotion/cli": "^4.0.250",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.4",
+    "@types/react-dom": "^19.0.2",
+    "prisma": "^6.2.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

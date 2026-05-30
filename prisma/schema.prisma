@@ -1,0 +1,103 @@
+// Prisma schema — SQLite by default (zero infra, zero cost).
+// Migration to Postgres is a one-line `provider` change + connection string.
+// JSON payloads are stored as String (SQLite-portable) and parsed in app code.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Used by Prisma for migrations / db push (bypasses the connection pooler).
+  directUrl = env("DIRECT_URL")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  // Supabase Auth user id (auth.users.id). Nullable so the app still runs
+  // without auth configured; set on every create when auth is on.
+  userId      String?
+  title       String   @default("Untitled project")
+  status      String   @default("draft") // draft | transcribing | ready | rendering | done | error
+  // Output format / canvas
+  format      String   @default("9:16") // 9:16 | 16:9 | 1:1
+  fps         Int      @default(30)
+  width       Int      @default(1080)
+  height      Int      @default(1920)
+  // Editorial inputs
+  script      String   @default("")
+  preferences String   @default("{}") // JSON: EditPreferences
+  // Latest generated EDL (JSON) + how it was produced
+  edlJson     String? // JSON: EDL
+  edlSource   String? // deterministic | llm
+  durationInFrames Int?
+
+  media   MediaAsset[]
+  jobs    Job[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model MediaAsset {
+  id           String  @id @default(cuid())
+  projectId    String
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  kind         String // video | image | audio
+  originalName String
+  storageKey   String // opaque key resolved by the StorageAdapter
+  mimeType     String
+  sizeBytes    Int
+  contentHash  String // sha256 of the bytes — used for transcript caching
+
+  // Probe metadata (filled by ffprobe for video/audio)
+  durationSec Float?
+  width       Int?
+  height      Int?
+  fps         Float?
+  hasAudio    Boolean @default(false)
+  probeJson   String? // raw ffprobe JSON
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([contentHash])
+}
+
+// Transcripts are cached by contentHash, so re-uploading the same file
+// (even in another project) never re-transcribes — a hard cost lever.
+model Transcript {
+  id          String  @id @default(cuid())
+  contentHash String  @unique
+  provider    String // faster-whisper | groq
+  language    String?
+  segmentsJson String // JSON: TranscriptSegment[]
+  wordsJson    String // JSON: TranscriptWord[] (word-level timestamps)
+  durationSec  Float?
+  costJson     String? // JSON: { provider, audioSeconds, estimatedUsd }
+
+  createdAt DateTime @default(now())
+}
+
+model Job {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  type     String // transcribe | render
+  status   String  @default("queued") // queued | active | completed | failed
+  bullJobId String?
+  progress  Int     @default(0)
+  resultJson String? // JSON: type-specific result (e.g. { outputKey })
+  errorText  String?
+  costJson   String? // JSON: estimated cost breakdown for this job
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+}
