@@ -14,8 +14,19 @@
 import { FORMAT_DIMENSIONS, type EditPreferences } from "@/lib/types";
 import type { MediaInfo, TranscriptResult } from "@/lib/types";
 import { buildCaptionsFromScript, buildCaptionsFromTranscripts } from "./captions";
-import { parseEDL, type Caption, type EDL, type Overlay, type Transition } from "./schema";
+import { parseEDL, type Caption, type EDL, type Overlay, type Transition, type TransitionType } from "./schema";
 import { TITLE_STYLES } from "./titleStyles";
+
+/**
+ * Pace-tuned variety pools used by the "auto" transition mode in the
+ * deterministic editor (the LLM picks its own). Slow stays sober; fast gets
+ * punchy and varied so the cut feels dynamic. Rotated across consecutive cuts.
+ */
+const AUTO_TRANSITION_POOLS: Record<EditPreferences["pace"], TransitionType[]> = {
+  slow: ["fade"],
+  medium: ["fade", "slide", "fade", "slideUp"],
+  fast: ["zoom", "slide", "wipe", "slideUp"],
+};
 
 export interface DeterministicInput {
   media: MediaInfo[];
@@ -98,12 +109,17 @@ export function generateDeterministicEDL(input: DeterministicInput): EDL {
   }
 
   // --- Transitions ---
+  // "auto" rotates a pace-tuned variety pool for a dynamic feel; a concrete
+  // value forces that single transition; "cut" leaves the array empty.
   const transitions: Transition[] = [];
   if (prefs.transition !== "cut") {
+    const pool = AUTO_TRANSITION_POOLS[prefs.pace];
     for (let i = 0; i < clips.length - 1; i++) {
+      const type: TransitionType =
+        prefs.transition === "auto" ? pool[i % pool.length] : prefs.transition;
       transitions.push({
         afterClipId: clips[i].id,
-        type: prefs.transition,
+        type,
         durationInFrames: prefs.transitionDurationFrames,
       });
     }

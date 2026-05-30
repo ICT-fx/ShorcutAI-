@@ -33,6 +33,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="fr" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body>
+        {/* Caption-font previews in the editor (next/font handles the UI fonts). */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Montserrat:wght@700&family=Oswald:wght@500&family=Poppins:wght@600&display=swap"
+        />
         <div className="topbar">
           <Link href="/" className="brand">
             <BrandMark />

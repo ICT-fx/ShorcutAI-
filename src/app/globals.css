@@ -285,3 +285,20 @@ button:not(.primary) .spinner { border-color: var(--border-strong); border-top-c
 .auth-tabs button { flex: 1; background: transparent; border: none; padding: 8px; font-size: 13px; color: var(--muted); border-radius: 7px; }
 .auth-tabs button:hover:not(:disabled) { transform: none; color: var(--text); }
 .auth-tabs button.active { background: var(--surface-3); color: var(--text); box-shadow: 0 1px 0 rgba(255,255,255,0.04); }
+
+/* --- Caption font preview chips --- */
+.font-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.font-chip {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 10px 12px; text-align: left; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+.font-chip:hover:not(:disabled) { border-color: var(--border-strong); transform: translateY(-1px); }
+.font-chip .font-chip-sample { font-size: 19px; line-height: 1.1; letter-spacing: 0.01em; }
+.font-chip .font-chip-name {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted);
+}
+.font-chip.selected { border-color: var(--lime); background: var(--lime-soft); box-shadow: 0 0 0 3px var(--lime-soft); }
+.font-chip.selected .font-chip-name { color: var(--lime); }

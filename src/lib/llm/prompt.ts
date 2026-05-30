@@ -22,7 +22,7 @@ You MUST respond with a SINGLE JSON object and NOTHING else (no prose, no markdo
     { "id": "ov-2", "kind": "image", "content": "<id of an IMAGE asset>", "startFrame": <int>, "endFrame": <int>, "position": "top|center|bottom", "widthFraction": <0..1 optional> }
   ],
   "transitions": [
-    { "afterClipId": "clip-1", "type": "cut|fade|slide", "durationInFrames": <int> }
+    { "afterClipId": "clip-1", "type": "cut|fade|slide|slideUp|zoom|wipe", "durationInFrames": <int> }
   ],
   "audio": { "musicTrackId": "<id of an AUDIO asset, optional>", "duckUnderVoice": true, "musicVolume": 0.18 }
 }
@@ -40,7 +40,7 @@ EDITORIAL GUIDANCE:
 - The STYLE NOTES are the creator's explicit creative direction — treat them as the TOP priority. They dictate pacing, tone, energy, what to keep vs cut, and the overall vibe. If the notes conflict with your defaults, follow the notes.
 - Follow the script's intent. Order/trim clips to tell the story the script describes, cutting filler, hesitations and dead air.
 - Use text overlays (not the title) for hooks, key points and calls to action at the right moments — convert seconds to frames with fps.
-- Use transitions sparingly and purposefully; "cut" is the default.`;
+- TRANSITIONS: pick a type per cut from cut|fade|slide|slideUp|zoom|wipe and VARY them to fit the moment. Energetic/punchy edits can use zoom, slide, wipe and slideUp to build momentum; calm, serious or emotional content should stay sober (mostly "cut", the occasional "fade"). Don't repeat the same transition on every cut unless the style explicitly calls for it. "cut" (instant) is always valid and is the right default for tight, fast dialogue. Animated transitions are usually 6–14 frames.`;
 
 function summariseTranscript(tr: TranscriptResult, maxChars: number): string {
   // Compact, timestamped segments so the model can choose trim points.
@@ -73,7 +73,15 @@ export function buildUserPrompt(input: LlmPromptInput): string {
 
   const lines: string[] = [];
   lines.push(`OUTPUT FORMAT: ${prefs.format} (${width}x${height}), ${prefs.fps} fps.`);
-  lines.push(`PACING: ${prefs.pace}. DEFAULT TRANSITION: ${prefs.transition} (${prefs.transitionDurationFrames} frames).`);
+  if (prefs.transition === "auto") {
+    lines.push(
+      `PACING: ${prefs.pace}. TRANSITIONS: AUTO — you decide the transition type for EACH cut and vary them to fit the pacing and energy (see guidance). Use ~${prefs.transitionDurationFrames} frames for animated ones.`,
+    );
+  } else {
+    lines.push(
+      `PACING: ${prefs.pace}. DEFAULT TRANSITION: ${prefs.transition} (${prefs.transitionDurationFrames} frames) — use it as the default, but you may vary when it genuinely serves the edit.`,
+    );
+  }
   if (prefs.title.trim()) lines.push(`TITLE: ${prefs.title.trim()}`);
   if (prefs.styleNotes.trim()) lines.push(`STYLE NOTES: ${prefs.styleNotes.trim()}`);
 

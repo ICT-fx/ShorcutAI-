@@ -65,8 +65,15 @@ export const EditPreferencesSchema = z.object({
   titleStyle: z.enum(["bold", "boxed", "minimal", "kinetic"]).default("bold"),
   /** Drop detected silences at clip edges (Phase 4). */
   removeSilences: z.boolean().default(false),
-  /** Default transition between clips. */
-  transition: z.enum(["cut", "fade", "slide"]).default("cut"),
+  /**
+   * Default transition between clips. "auto" hands the choice to the editor:
+   * the LLM picks and VARIES transitions per cut to fit the context (more
+   * dynamic or more sober), and the deterministic fallback rotates a tasteful
+   * set based on the pace. Any other value forces that single transition.
+   */
+  transition: z
+    .enum(["auto", "cut", "fade", "slide", "slideUp", "zoom", "wipe"])
+    .default("auto"),
   transitionDurationFrames: z.number().int().min(0).max(60).default(8),
   /** Optional background music asset id + ducking. */
   musicTrackId: z.string().optional(),

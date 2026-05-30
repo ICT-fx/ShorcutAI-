@@ -80,10 +80,21 @@ export const CaptionSchema = z.object({
 });
 export type Caption = z.infer<typeof CaptionSchema>;
 
+/** Concrete transition looks the renderer knows how to draw (enter animations). */
+export const TransitionTypeSchema = z.enum([
+  "cut", // hard cut, no animation
+  "fade", // opacity dissolve in
+  "slide", // slide in from the right
+  "slideUp", // slide in from the bottom
+  "zoom", // punch-in scale + fade
+  "wipe", // left-to-right reveal
+]);
+export type TransitionType = z.infer<typeof TransitionTypeSchema>;
+
 export const TransitionSchema = z.object({
   /** Applies after the clip with this id, between it and the next clip. */
   afterClipId: z.string().min(1),
-  type: z.enum(["cut", "fade", "slide"]),
+  type: TransitionTypeSchema,
   durationInFrames: z.number().int().min(0),
 });
 export type Transition = z.infer<typeof TransitionSchema>;

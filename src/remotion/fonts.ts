@@ -13,15 +13,35 @@ import { loadFont as loadOswald } from "@remotion/google-fonts/Oswald";
 import { loadFont as loadBebas } from "@remotion/google-fonts/BebasNeue";
 import { loadFont as loadAnton } from "@remotion/google-fonts/Anton";
 
-const opts = (weights: string[]) =>
-  ({ weights, subsets: ["latin"], ignoreTooManyRequestsWarning: true }) as const;
-
+// Each loadFont() accepts its own literal weight/subset unions, so we pass the
+// option object inline (contextual typing validates the arrays) rather than via
+// a shared helper that would widen `weights` to string[].
 const FAMILIES: Record<string, string> = {
-  montserrat: loadMontserrat("normal", opts(["600", "700", "800"])).fontFamily,
-  poppins: loadPoppins("normal", opts(["600", "700"])).fontFamily,
-  oswald: loadOswald("normal", opts(["500", "700"])).fontFamily,
-  bebasneue: loadBebas("normal", opts(["400"])).fontFamily,
-  anton: loadAnton("normal", opts(["400"])).fontFamily,
+  montserrat: loadMontserrat("normal", {
+    weights: ["600", "700", "800"],
+    subsets: ["latin"],
+    ignoreTooManyRequestsWarning: true,
+  }).fontFamily,
+  poppins: loadPoppins("normal", {
+    weights: ["600", "700"],
+    subsets: ["latin"],
+    ignoreTooManyRequestsWarning: true,
+  }).fontFamily,
+  oswald: loadOswald("normal", {
+    weights: ["500", "700"],
+    subsets: ["latin"],
+    ignoreTooManyRequestsWarning: true,
+  }).fontFamily,
+  bebasneue: loadBebas("normal", {
+    weights: ["400"],
+    subsets: ["latin"],
+    ignoreTooManyRequestsWarning: true,
+  }).fontFamily,
+  anton: loadAnton("normal", {
+    weights: ["400"],
+    subsets: ["latin"],
+    ignoreTooManyRequestsWarning: true,
+  }).fontFamily,
 };
 
 const FALLBACK = `${FAMILIES.montserrat}, system-ui, sans-serif`;

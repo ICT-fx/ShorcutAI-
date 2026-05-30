@@ -23,12 +23,27 @@ export const TransitionWrapper: React.FC<{
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const remaining = 1 - progress;
 
   let style: React.CSSProperties = {};
-  if (transitionIn.type === "fade") {
-    style = { opacity: progress };
-  } else if (transitionIn.type === "slide") {
-    style = { transform: `translateX(${(1 - progress) * 100}%)` };
+  switch (transitionIn.type) {
+    case "fade":
+      style = { opacity: progress };
+      break;
+    case "slide": // in from the right
+      style = { transform: `translateX(${remaining * 100}%)` };
+      break;
+    case "slideUp": // in from the bottom
+      style = { transform: `translateY(${remaining * 100}%)` };
+      break;
+    case "zoom": // punch-in scale + fade
+      style = { transform: `scale(${0.82 + 0.18 * progress})`, opacity: progress };
+      break;
+    case "wipe": // left-to-right reveal
+      style = { clipPath: `inset(0 ${remaining * 100}% 0 0)` };
+      break;
+    default:
+      style = {};
   }
 
   return <AbsoluteFill style={style}>{children}</AbsoluteFill>;

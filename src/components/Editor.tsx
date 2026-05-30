@@ -7,6 +7,19 @@ import type { AutoEditProps } from "@/lib/edl/compile";
 import { TITLE_STYLES, TITLE_STYLE_KEYS } from "@/lib/edl/titleStyles";
 import type { EditPreferences } from "@/lib/types";
 
+/**
+ * Caption-font choices shown as live previews — each chip is rendered in the
+ * actual webfont (loaded via the Google Fonts <link> in layout.tsx) so the user
+ * sees the look before generating. `key` matches EditPreferences.captionFont.
+ */
+const CAPTION_FONTS: { key: EditPreferences["captionFont"]; label: string; css: string }[] = [
+  { key: "montserrat", label: "Montserrat", css: "'Montserrat', sans-serif" },
+  { key: "poppins", label: "Poppins", css: "'Poppins', sans-serif" },
+  { key: "oswald", label: "Oswald", css: "'Oswald', sans-serif" },
+  { key: "bebasneue", label: "Bebas Neue", css: "'Bebas Neue', sans-serif" },
+  { key: "anton", label: "Anton", css: "'Anton', sans-serif" },
+];
+
 interface MediaRow {
   id: string;
   kind: "video" | "image" | "audio";
@@ -296,9 +309,13 @@ export function Editor({ projectId }: { projectId: string }) {
               <div className="field">
                 <label>Transition</label>
                 <select value={prefs.transition} onChange={(e) => up("transition", e.target.value as EditPreferences["transition"])}>
+                  <option value="auto">✨ Automatique (l'IA varie)</option>
                   <option value="cut">Coupe franche</option>
                   <option value="fade">Fondu</option>
-                  <option value="slide">Glissé</option>
+                  <option value="slide">Glissé (droite)</option>
+                  <option value="slideUp">Glissé (bas)</option>
+                  <option value="zoom">Zoom</option>
+                  <option value="wipe">Balayage</option>
                 </select>
               </div>
             </div>
@@ -319,14 +336,22 @@ export function Editor({ projectId }: { projectId: string }) {
               </div>
             </div>
             <div className="field">
-              <label>Police des sous-titres</label>
-              <select value={prefs.captionFont} onChange={(e) => up("captionFont", e.target.value as EditPreferences["captionFont"])}>
-                <option value="montserrat">Montserrat</option>
-                <option value="poppins">Poppins</option>
-                <option value="oswald">Oswald</option>
-                <option value="bebasneue">Bebas Neue</option>
-                <option value="anton">Anton</option>
-              </select>
+              <label>Police des sous-titres <span className="small muted">(aperçu)</span></label>
+              <div className="font-grid">
+                {CAPTION_FONTS.map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    className={`font-chip ${prefs.captionFont === f.key ? "selected" : ""}`}
+                    style={{ fontFamily: f.css }}
+                    onClick={() => up("captionFont", f.key)}
+                    aria-pressed={prefs.captionFont === f.key}
+                  >
+                    <span className="font-chip-sample">Sous-titre</span>
+                    <span className="font-chip-name">{f.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="field">
               <label>Couper les silences <span className="small muted">(nécessite ffmpeg)</span></label>
