@@ -25,6 +25,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except Next internals and static files.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|ico)$).*)"],
+  // Run on everything except Next internals, static files, and the media upload
+  // endpoint. Middleware buffers the request body with a ~10MB cap, which
+  // truncates large video uploads and breaks multipart parsing; that route
+  // enforces its own auth via requireProject, so it doesn't need the middleware.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|api/projects/[^/]+/media|.*\\.(?:png|jpg|jpeg|svg|ico)$).*)",
+  ],
 };
