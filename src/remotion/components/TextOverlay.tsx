@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import type { Overlay } from "../../lib/edl/schema";
+import { fontFamilyFor } from "../fonts";
 import { isCoordPosition, positionContainerStyle } from "./position";
 
 /** A text overlay (title, lower-third, callout). Animation is relative to its own Sequence. */
@@ -33,7 +34,7 @@ export const TextOverlay: React.FC<{ overlay: Overlay }> = ({ overlay }) => {
   const box: React.CSSProperties = {
     maxWidth: "84%",
     textAlign: "center",
-    fontFamily: "Inter, system-ui, sans-serif",
+    fontFamily: fontFamilyFor(overlay.fontFamily),
     fontWeight: 800,
     fontSize,
     lineHeight: 1.15,

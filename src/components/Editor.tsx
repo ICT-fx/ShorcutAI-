@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { PlayerPreview } from "./PlayerPreview";
 import type { AutoEditProps } from "@/lib/edl/compile";
+import { TITLE_STYLES, TITLE_STYLE_KEYS } from "@/lib/edl/titleStyles";
 import type { EditPreferences } from "@/lib/types";
 
 interface MediaRow {
@@ -318,6 +319,16 @@ export function Editor({ projectId }: { projectId: string }) {
               </div>
             </div>
             <div className="field">
+              <label>Police des sous-titres</label>
+              <select value={prefs.captionFont} onChange={(e) => up("captionFont", e.target.value as EditPreferences["captionFont"])}>
+                <option value="montserrat">Montserrat</option>
+                <option value="poppins">Poppins</option>
+                <option value="oswald">Oswald</option>
+                <option value="bebasneue">Bebas Neue</option>
+                <option value="anton">Anton</option>
+              </select>
+            </div>
+            <div className="field">
               <label>Couper les silences <span className="small muted">(nécessite ffmpeg)</span></label>
               <select value={prefs.removeSilences ? "on" : "off"} onChange={(e) => up("removeSilences", e.target.value === "on")}>
                 <option value="off">Désactivé</option>
@@ -327,6 +338,21 @@ export function Editor({ projectId }: { projectId: string }) {
             <div className="field">
               <label>Titre d'intro</label>
               <input type="text" value={prefs.title} onChange={(e) => up("title", e.target.value)} placeholder="(optionnel)" />
+            </div>
+            <div className="field">
+              <label>Style du titre</label>
+              <div className="row" style={{ gap: 8 }}>
+                {TITLE_STYLE_KEYS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className={`sm ${prefs.titleStyle === k ? "primary" : ""}`}
+                    onClick={() => up("titleStyle", k)}
+                  >
+                    {TITLE_STYLES[k].label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="field">
               <label>Musique de fond</label>

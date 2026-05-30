@@ -57,6 +57,12 @@ export const EditPreferencesSchema = z.object({
   /** Burned-in captions from the transcript. */
   captions: z.boolean().default(true),
   captionStyle: z.enum(["word", "phrase"]).default("phrase"),
+  /** Font used for burned-in captions (and the default for titles). */
+  captionFont: z
+    .enum(["montserrat", "poppins", "oswald", "bebasneue", "anton"])
+    .default("montserrat"),
+  /** Preset look for the intro title overlay (chosen via buttons in the UI). */
+  titleStyle: z.enum(["bold", "boxed", "minimal", "kinetic"]).default("bold"),
   /** Drop detected silences at clip edges (Phase 4). */
   removeSilences: z.boolean().default(false),
   /** Default transition between clips. */

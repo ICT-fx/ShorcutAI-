@@ -15,6 +15,7 @@ import { FORMAT_DIMENSIONS, type EditPreferences } from "@/lib/types";
 import type { MediaInfo, TranscriptResult } from "@/lib/types";
 import { buildCaptionsFromScript, buildCaptionsFromTranscripts } from "./captions";
 import { parseEDL, type Caption, type EDL, type Overlay, type Transition } from "./schema";
+import { TITLE_STYLES } from "./titleStyles";
 
 export interface DeterministicInput {
   media: MediaInfo[];
@@ -80,15 +81,19 @@ export function generateDeterministicEDL(input: DeterministicInput): EDL {
   // --- Overlays: optional intro title ---
   const overlays: Overlay[] = [];
   if (prefs.title.trim()) {
+    const preset = TITLE_STYLES[prefs.titleStyle];
     overlays.push({
       id: "title",
       kind: "text",
       content: prefs.title.trim(),
       startFrame: 0,
       endFrame: toFrame(Math.min(2.5, totalSec), fps),
-      position: "center",
-      animation: "scaleIn",
-      fontSizePx: Math.round(width * 0.075),
+      position: preset.position,
+      animation: preset.animation,
+      fontFamily: preset.fontKey,
+      fontSizePx: Math.round(width * preset.sizeFraction),
+      color: preset.color,
+      backgroundColor: preset.backgroundColor,
     });
   }
 
@@ -121,6 +126,7 @@ export function generateDeterministicEDL(input: DeterministicInput): EDL {
       ? { musicTrackId: prefs.musicTrackId, duckUnderVoice: prefs.duckMusic, musicVolume: 0.18 }
       : undefined,
     transitions,
+    style: { captionFont: prefs.captionFont },
   };
 
   // Round-trip through the schema so defaults are applied and we fail loudly

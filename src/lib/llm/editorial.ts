@@ -16,6 +16,7 @@ import { estimateLlmCost } from "@/lib/cost";
 import { FORMAT_DIMENSIONS, type EditPreferences, type MediaInfo, type TranscriptResult } from "@/lib/types";
 import { buildCaptionsFromScript, buildCaptionsFromTranscripts } from "@/lib/edl/captions";
 import { parseEDL, type EDL } from "@/lib/edl/schema";
+import { TITLE_STYLES } from "@/lib/edl/titleStyles";
 import { validateEDL } from "@/lib/edl/validate";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
 
@@ -68,7 +69,29 @@ function assembleEDL(skeleton: Skeleton, input: LlmEditInput): EDL {
       : buildCaptionsFromScript(input.script, totalSec, fps);
   }
 
-  const overlays = skeleton.overlays ?? [];
+  // The intro title is app-owned (uses the user's chosen style preset), not the
+  // LLM's — inject it so the title always honours the button choice.
+  const titleOverlays: any[] = [];
+  if (input.prefs.title.trim()) {
+    const preset = TITLE_STYLES[input.prefs.titleStyle];
+    titleOverlays.push({
+      id: "title",
+      kind: "text",
+      content: input.prefs.title.trim(),
+      startFrame: 0,
+      endFrame: toFrame(Math.min(2.5, totalSec), fps),
+      position: preset.position,
+      animation: preset.animation,
+      fontFamily: preset.fontKey,
+      fontSizePx: Math.round(width * preset.sizeFraction),
+      color: preset.color,
+      backgroundColor: preset.backgroundColor,
+    });
+  }
+  // Drop any title the model produced anyway, then prepend ours.
+  const modelOverlays = (skeleton.overlays ?? []).filter((o: any) => o?.id !== "title");
+  const overlays = [...titleOverlays, ...modelOverlays];
+
   const clipFrames = clips.reduce((a, c) => a + toFrame(Math.max(0, c.outPoint - c.inPoint), fps), 0);
   const overlayEnd = overlays.reduce((m: number, o: any) => Math.max(m, Number(o?.endFrame) || 0), 0);
   const captionEnd = captions.reduce((m, c) => Math.max(m, c.endFrame), 0);
@@ -80,6 +103,7 @@ function assembleEDL(skeleton: Skeleton, input: LlmEditInput): EDL {
     tracks: { clips, overlays, captions },
     audio: skeleton.audio ?? undefined,
     transitions: skeleton.transitions ?? [],
+    style: { captionFont: input.prefs.captionFont },
   });
 }
 

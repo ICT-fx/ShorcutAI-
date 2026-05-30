@@ -1,12 +1,23 @@
 /**
  * Ingestion: persist an uploaded file through the StorageAdapter, hash it for
  * transcript caching, record it in the DB, and probe video/audio metadata.
+ * Videos in a codec Chrome can't render (e.g. iPhone HEVC) are transcoded to
+ * H.264 on the way in (requires ffmpeg; no-op without it).
  */
 import { createHash, randomUUID } from "node:crypto";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import type { MediaAsset } from "@prisma/client";
 import { config } from "@/lib/config";
 import { prisma } from "@/lib/db";
-import { probeMedia } from "@/lib/media/probe";
+import { probeFile, type ProbeResult } from "@/lib/media/probe";
+import {
+  isChromeCompatibleCodec,
+  isFfmpegAvailable,
+  probeVideoCodec,
+  transcodeToH264,
+} from "@/lib/media/transcode";
 import { getStorage } from "@/lib/storage";
 import type { MediaKind } from "@/lib/types";
 
@@ -14,7 +25,6 @@ function kindFromMime(mime: string, name: string): MediaKind {
   if (mime.startsWith("video/")) return "video";
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("audio/")) return "audio";
-  // Fallback on extension.
   const ext = name.toLowerCase().split(".").pop() ?? "";
   if (["mp4", "mov", "webm", "mkv", "avi", "m4v"].includes(ext)) return "video";
   if (["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext)) return "image";
@@ -27,68 +37,81 @@ function sanitize(name: string): string {
 }
 
 export async function ingestUpload(projectId: string, file: File): Promise<MediaAsset> {
-  const sizeBytes = file.size;
   const maxBytes = config.limits.maxUploadMb * 1024 * 1024;
-  if (maxBytes > 0 && sizeBytes > maxBytes) {
+  if (maxBytes > 0 && file.size > maxBytes) {
     throw new Error(
-      `File "${file.name}" is ${(sizeBytes / 1024 / 1024).toFixed(1)}MB, exceeds limit of ${config.limits.maxUploadMb}MB.`,
+      `"${file.name}" fait ${(file.size / 1024 / 1024).toFixed(1)}Mo, au-delà de la limite de ${config.limits.maxUploadMb}Mo.`,
     );
   }
 
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const contentHash = createHash("sha256").update(bytes).digest("hex");
+  let bytes = Buffer.from(await file.arrayBuffer());
   const kind = kindFromMime(file.type || "", file.name);
-  const storageKey = `projects/${projectId}/${randomUUID()}-${sanitize(file.name)}`;
+  let originalName = file.name;
+  let mimeType = file.type || "application/octet-stream";
+  let transcoded = false;
+  let probe: ProbeResult | null = null;
 
-  const storage = getStorage();
-  await storage.put(storageKey, bytes, { contentType: file.type || undefined });
+  const tempDir = await mkdtemp(path.join(tmpdir(), "ingest-"));
+  try {
+    if (kind === "video" || kind === "audio") {
+      const inExt = path.extname(file.name) || (kind === "video" ? ".mp4" : ".m4a");
+      const inPath = path.join(tempDir, `in${inExt}`);
+      await writeFile(inPath, bytes);
 
-  let asset = await prisma.mediaAsset.create({
-    data: {
-      projectId,
-      kind,
-      originalName: file.name,
-      storageKey,
-      mimeType: file.type || "application/octet-stream",
-      sizeBytes,
-      contentHash,
-    },
-  });
+      let probePath = inPath;
+      if (kind === "video" && (await isFfmpegAvailable())) {
+        const codec = await probeVideoCodec(inPath);
+        if (!isChromeCompatibleCodec(codec)) {
+          const outPath = path.join(tempDir, "out.mp4");
+          await transcodeToH264(inPath, outPath);
+          bytes = await readFile(outPath);
+          mimeType = "video/mp4";
+          originalName = originalName.replace(/\.[^.]+$/, "") + ".mp4";
+          probePath = outPath;
+          transcoded = true;
+        }
+      }
 
-  // Probe video/audio so the editor and validator know real bounds.
-  if (kind === "video" || kind === "audio") {
-    try {
-      const probe = await probeMedia(storage, storageKey);
-      // Reject clips longer than the configured cap.
+      try {
+        probe = await probeFile(probePath);
+      } catch (err) {
+        console.warn(`Probe failed for ${file.name}:`, err);
+      }
+
       if (
         config.limits.maxClipSeconds > 0 &&
-        probe.durationSec &&
+        probe?.durationSec &&
         probe.durationSec > config.limits.maxClipSeconds
       ) {
-        await storage.remove(storageKey);
-        await prisma.mediaAsset.delete({ where: { id: asset.id } });
         throw new Error(
-          `"${file.name}" is ${probe.durationSec.toFixed(0)}s, exceeds MAX_CLIP_SECONDS (${config.limits.maxClipSeconds}s).`,
+          `"${file.name}" fait ${probe.durationSec.toFixed(0)}s, au-delà de MAX_CLIP_SECONDS (${config.limits.maxClipSeconds}s).`,
         );
       }
-      asset = await prisma.mediaAsset.update({
-        where: { id: asset.id },
-        data: {
-          durationSec: probe.durationSec,
-          width: probe.width,
-          height: probe.height,
-          fps: probe.fps,
-          hasAudio: probe.hasAudio,
-          probeJson: JSON.stringify(probe),
-        },
-      });
-    } catch (err) {
-      // If the error is our own size guard, rethrow; otherwise keep the asset
-      // unprobed (the editor uses fallbacks) but surface a warning server-side.
-      if (err instanceof Error && err.message.includes("MAX_CLIP_SECONDS")) throw err;
-      console.warn(`Probe failed for ${file.name}:`, err);
     }
-  }
 
-  return asset;
+    const contentHash = createHash("sha256").update(bytes).digest("hex");
+    const storageKey = `projects/${projectId}/${randomUUID()}-${sanitize(originalName)}`;
+    const storage = getStorage();
+    await storage.put(storageKey, bytes, { contentType: mimeType });
+
+    return prisma.mediaAsset.create({
+      data: {
+        projectId,
+        kind,
+        originalName,
+        storageKey,
+        mimeType,
+        sizeBytes: bytes.length,
+        contentHash,
+        durationSec: probe?.durationSec ?? null,
+        width: probe?.width ?? null,
+        height: probe?.height ?? null,
+        fps: probe?.fps ?? null,
+        hasAudio: probe?.hasAudio ?? false,
+        probeJson: probe ? JSON.stringify({ ...probe, transcoded }) : null,
+      },
+    });
+  } finally {
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
 }

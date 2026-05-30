@@ -1,14 +1,19 @@
 import React from "react";
 import { AbsoluteFill, Sequence, useVideoConfig } from "remotion";
 import type { Caption } from "../../lib/edl/schema";
+import { fontFamilyFor } from "../fonts";
 
 /**
  * Burned-in captions. Each caption is its own Sequence so it only mounts during
  * its window. Styled for the punchy, high-contrast look common to short-form.
  */
-export const Captions: React.FC<{ captions: Caption[] }> = ({ captions }) => {
+export const Captions: React.FC<{ captions: Caption[]; fontKey?: string }> = ({
+  captions,
+  fontKey,
+}) => {
   const { width } = useVideoConfig();
   const fontSize = Math.round(width * 0.052);
+  const fontFamily = fontFamilyFor(fontKey);
 
   return (
     <>
@@ -27,7 +32,7 @@ export const Captions: React.FC<{ captions: Caption[] }> = ({ captions }) => {
                 style={{
                   maxWidth: "86%",
                   textAlign: "center",
-                  fontFamily: "Inter, system-ui, sans-serif",
+                  fontFamily,
                   fontWeight: 800,
                   fontSize,
                   lineHeight: 1.2,

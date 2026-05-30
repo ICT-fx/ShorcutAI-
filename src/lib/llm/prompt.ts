@@ -33,12 +33,13 @@ HARD RULES (a validator will reject violations and you will be asked to fix them
 - At least one clip is required. Prefer trimming dead air / filler over keeping everything.
 - All *Frame values are integers at the given fps. startFrame < endFrame.
 - "transitions[].afterClipId" must reference a clip id you output.
-- Do NOT output captions or meta — those are added automatically.
+- Do NOT output captions, the intro title, or meta — those are added automatically by the app.
 - Keep the total edit within the requested target duration when one is given.
 
 EDITORIAL GUIDANCE:
-- Follow the script's intent and the style notes. Order clips to tell the story the script describes.
-- Use text overlays for hooks, key points, and calls to action at the right moments (convert seconds to frames with fps).
+- The STYLE NOTES are the creator's explicit creative direction — treat them as the TOP priority. They dictate pacing, tone, energy, what to keep vs cut, and the overall vibe. If the notes conflict with your defaults, follow the notes.
+- Follow the script's intent. Order/trim clips to tell the story the script describes, cutting filler, hesitations and dead air.
+- Use text overlays (not the title) for hooks, key points and calls to action at the right moments — convert seconds to frames with fps.
 - Use transitions sparingly and purposefully; "cut" is the default.`;
 
 function summariseTranscript(tr: TranscriptResult, maxChars: number): string {

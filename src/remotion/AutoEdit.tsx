@@ -19,6 +19,7 @@ export const AutoEdit: React.FC<AutoEditProps> = ({
   overlays,
   captions,
   audio,
+  style,
   media,
 }) => {
   return (
@@ -61,7 +62,7 @@ export const AutoEdit: React.FC<AutoEditProps> = ({
       })}
 
       {/* --- Captions --- */}
-      <Captions captions={captions} />
+      <Captions captions={captions} fontKey={style?.captionFont} />
 
       {/* --- Background music (top-level so ducking sees absolute frames) --- */}
       {audio?.musicTrackId ? (

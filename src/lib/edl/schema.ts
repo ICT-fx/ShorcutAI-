@@ -64,6 +64,8 @@ export const OverlaySchema = z.object({
   animation: AnimationSchema.default("fadeIn"),
   /** Optional styling hints, all optional so the renderer can use defaults. */
   fontSizePx: z.number().int().positive().optional(),
+  /** Font key (montserrat | poppins | oswald | bebasneue | anton). */
+  fontFamily: z.string().optional(),
   color: z.string().optional(),
   backgroundColor: z.string().optional(),
   /** For image overlays: width as a fraction of canvas width (0..1). */
@@ -104,6 +106,12 @@ export const MetaSchema = z.object({
 });
 export type Meta = z.infer<typeof MetaSchema>;
 
+/** Global styling for the render (caption font, etc.). */
+export const StyleSchema = z.object({
+  captionFont: z.string().default("montserrat"),
+});
+export type StyleConfig = z.infer<typeof StyleSchema>;
+
 // --- The EDL -----------------------------------------------------------------
 
 export const EDLSchema = z.object({
@@ -116,6 +124,7 @@ export const EDLSchema = z.object({
   }),
   audio: AudioSchema.optional(),
   transitions: z.array(TransitionSchema).default([]),
+  style: StyleSchema.default({ captionFont: "montserrat" }),
 });
 export type EDL = z.infer<typeof EDLSchema>;
 

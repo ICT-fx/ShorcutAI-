@@ -6,7 +6,7 @@
  *
  * Browser-safe: no node-only imports here.
  */
-import type { AudioConfig, Caption, Clip, EDL, Meta, Overlay, Transition } from "./schema";
+import type { AudioConfig, Caption, Clip, EDL, Meta, Overlay, StyleConfig, Transition } from "./schema";
 import type { MediaInfo } from "@/lib/types";
 
 export interface CompiledClip extends Clip {
@@ -26,6 +26,7 @@ export type AutoEditProps = {
   overlays: Overlay[];
   captions: Caption[];
   audio?: AudioConfig;
+  style: StyleConfig;
   /** id -> media descriptor (with a fetchable url). */
   media: Record<string, MediaInfo>;
 };
@@ -78,6 +79,7 @@ export function compileEDL(edl: EDL, media: MediaInfo[]): AutoEditProps {
     overlays: edl.tracks.overlays,
     captions: edl.tracks.captions,
     audio: edl.audio,
+    style: edl.style,
     media: mediaMap,
   };
 }
