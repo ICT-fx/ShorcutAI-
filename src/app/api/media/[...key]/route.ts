@@ -81,6 +81,10 @@ export async function GET(req: Request, { params }: Ctx) {
         "Content-Range": `bytes ${start}-${end}/${size}`,
         "Accept-Ranges": "bytes",
         "Cache-Control": "public, max-age=3600",
+        // Neutralise script execution if a user-uploaded SVG/HTML is opened
+        // directly (stored-XSS guard); harmless for <img>/<video> sub-resource use.
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
       },
     });
   }
