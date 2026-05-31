@@ -42,6 +42,17 @@ model Project {
   @@index([userId])
 }
 
+// Per-user app settings. Keyed by the Supabase auth user id (or "__local__"
+// when auth is disabled). Holds the user's standing "editing playbook" — their
+// montage doctrine injected into the LLM prompt on every generation.
+model UserSettings {
+  userId          String   @id
+  editingPlaybook String   @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model MediaAsset {
   id           String  @id @default(cuid())
   projectId    String

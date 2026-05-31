@@ -39,7 +39,7 @@ HARD RULES (a validator will reject violations and you will be asked to fix them
 - Keep the total edit within the requested target duration when one is given.
 
 EDITORIAL GUIDANCE:
-- The STYLE NOTES (and any instructions in the script) are the creator's explicit creative direction — treat them as the TOP priority. They dictate pacing, tone, energy, what to keep vs cut, and the overall vibe. If they conflict with your defaults, follow them. Note: the script field may contain a brief/instructions rather than literal narration — read it as intent, do not put it on screen.
+- The EDITING PLAYBOOK and STYLE NOTES (plus any instructions in the script) are the creator's explicit creative direction — treat them as the TOP priority. They dictate pacing, tone, energy, what to keep vs cut, and the overall vibe. If they conflict with your defaults, follow them. The PLAYBOOK is the creator's standing method (applies to every video); STYLE NOTES are specific to this video — honour both. Note: the script field may contain a brief/instructions rather than literal narration — read it as intent, do not put it on screen.
 - DYNAMIC EDITING / JUMP CUTS: Use the per-rush transcript timings to cut aggressively. Split a long take into MANY short clips, dropping hesitations ("euh", "hmm"), false starts, repetitions and dead air — keep only the strong moments. More, shorter clips = more pace, and they create the cut points where transitions/zooms live. A 45s talking-head take typically becomes ~6–15 tight clips for a dynamic edit.
 - LISTS / RANKINGS: If the content is a ranked list (e.g. a "top 4"), add ONE text overlay per item that NAMES it (e.g. "#4 — Japon", "#3 — Italie"), and time each overlay to the transcript moment where that item is actually introduced — never evenly spaced. Find the item names in the transcript; don't output bare "#1/#2" with no name.
 - Use text overlays (not the title) for hooks, key points and calls to action at the right moments — convert seconds to frames with fps. Keep overlay text SHORT (a few words); never paste long sentences or the whole script.
@@ -89,12 +89,14 @@ export interface LlmPromptInput {
   media: MediaInfo[];
   transcripts: Record<string, TranscriptResult>;
   script: string;
+  /** Owner's standing editing playbook (from settings) — top-priority direction. */
+  playbook?: string;
   width: number;
   height: number;
 }
 
 export function buildUserPrompt(input: LlmPromptInput): string {
-  const { prefs, media, transcripts, script, width, height } = input;
+  const { prefs, media, transcripts, script, playbook, width, height } = input;
   const videos = media.filter((m) => m.kind === "video");
   const images = media.filter((m) => m.kind === "image");
   const audios = media.filter((m) => m.kind === "audio");
@@ -111,6 +113,11 @@ export function buildUserPrompt(input: LlmPromptInput): string {
     );
   }
   lines.push(TRIM_GUIDANCE[prefs.pace]);
+  if (playbook?.trim()) {
+    lines.push(
+      `\nEDITING PLAYBOOK (the creator's standing rules — TOP priority, apply to this edit; if they conflict with defaults, follow the playbook):\n${playbook.trim()}`,
+    );
+  }
   if (prefs.title.trim()) lines.push(`TITLE: ${prefs.title.trim()}`);
   if (prefs.styleNotes.trim()) lines.push(`STYLE NOTES: ${prefs.styleNotes.trim()}`);
 

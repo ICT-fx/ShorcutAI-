@@ -47,6 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </Link>
           {user ? (
             <div className="row" style={{ gap: 14 }}>
+              <Link href="/settings" className="small muted">Ma méthode</Link>
               <span className="user-pill">{user.email}</span>
               <form action="/auth/signout" method="post" style={{ margin: 0 }}>
                 <button className="sm" type="submit">Déconnexion</button>

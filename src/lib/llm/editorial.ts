@@ -26,6 +26,8 @@ export interface LlmEditInput {
   media: MediaInfo[];
   transcripts: Record<string, TranscriptResult>;
   script: string;
+  /** The project owner's standing editing playbook (from settings). */
+  playbook?: string;
 }
 
 interface Skeleton {
@@ -147,6 +149,7 @@ export async function generateLlmEDL(input: LlmEditInput): Promise<EDL> {
     media: input.media,
     transcripts: input.transcripts,
     script: input.script,
+    playbook: input.playbook,
     width,
     height,
   });

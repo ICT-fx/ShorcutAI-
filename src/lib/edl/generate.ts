@@ -52,7 +52,16 @@ export async function generateProjectEDL(
       // Lazy import keeps the (optional) Anthropic SDK out of paths that never
       // use it. Implemented in Phase 3.
       const { generateLlmEDL } = await import("@/lib/llm/editorial");
-      edl = await generateLlmEDL({ project, prefs, media, transcripts, script: project.script });
+      const { getUserSettings } = await import("@/lib/settings");
+      const { editingPlaybook } = await getUserSettings(project.userId);
+      edl = await generateLlmEDL({
+        project,
+        prefs,
+        media,
+        transcripts,
+        script: project.script,
+        playbook: editingPlaybook,
+      });
       source = "llm";
     } catch (err) {
       console.warn(
