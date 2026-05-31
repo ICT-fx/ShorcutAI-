@@ -55,15 +55,26 @@ export async function generateProjectEDL(
       // Lazy import keeps the (optional) Anthropic SDK out of paths that never
       // use it. Implemented in Phase 3.
       const { generateLlmEDL } = await import("@/lib/llm/editorial");
-      const { getUserSettings } = await import("@/lib/settings");
-      const { editingPlaybook } = await getUserSettings(project.userId);
+      // The playbook is a best-effort enhancement: a settings/DB error (e.g. a
+      // stale Prisma client before a restart) must NEVER drop us to the bare
+      // deterministic montage. Fetch it defensively.
+      let playbook = "";
+      try {
+        const { getUserSettings } = await import("@/lib/settings");
+        playbook = (await getUserSettings(project.userId)).editingPlaybook;
+      } catch (e) {
+        console.warn(
+          "Editing playbook unavailable; continuing without it:",
+          e instanceof Error ? e.message : e,
+        );
+      }
       edl = await generateLlmEDL({
         project,
         prefs,
         media,
         transcripts,
         script: project.script,
-        playbook: editingPlaybook,
+        playbook,
       });
       source = "llm";
     } catch (err) {
