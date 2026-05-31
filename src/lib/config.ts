@@ -62,7 +62,7 @@ export const config = {
 
   llm: {
     anthropicApiKey: str("ANTHROPIC_API_KEY"),
-    model: str("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"),
+    model: str("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
     maxRepairAttempts: num("LLM_MAX_REPAIR_ATTEMPTS", 2),
     get enabled() {
       return Boolean(process.env.ANTHROPIC_API_KEY);

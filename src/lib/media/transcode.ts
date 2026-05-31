@@ -6,6 +6,9 @@
  * file is kept) — the app still works for already-compatible files.
  */
 import { execFile } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { promisify } from "node:util";
 
 const exec = promisify(execFile);
@@ -46,6 +49,32 @@ export function isChromeCompatibleCodec(codec: string | null): boolean {
   // Unknown codec → assume OK (don't transcode blindly).
   if (!codec) return true;
   return CHROME_OK.has(codec);
+}
+
+/**
+ * Extract a tiny, transcription-friendly audio track from any audio/video bytes:
+ * mono, 16 kHz, MP3. Whisper-class models only need 16 kHz mono, and this shrinks
+ * a 1080p clip from tens of MB to well under provider file-size limits (Groq caps
+ * uploads), which is the usual reason transcription silently fails. Requires
+ * ffmpeg; callers should guard with isFfmpegAvailable() and fall back to the raw
+ * bytes on error.
+ */
+export async function extractAudioForTranscription(input: Buffer, inExt: string): Promise<Buffer> {
+  const ext = inExt.startsWith(".") ? inExt : `.${inExt || "mp4"}`;
+  const dir = await mkdtemp(path.join(tmpdir(), "audio-"));
+  try {
+    const inPath = path.join(dir, `in${ext}`);
+    const outPath = path.join(dir, "out.mp3");
+    await writeFile(inPath, input);
+    await exec(
+      "ffmpeg",
+      ["-y", "-i", inPath, "-vn", "-ac", "1", "-ar", "16000", "-b:a", "64k", outPath],
+      { maxBuffer: 1024 * 1024 * 64 },
+    );
+    return await readFile(outPath);
+  } finally {
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 /** Transcode any input to a broadly-compatible H.264 + AAC MP4. */

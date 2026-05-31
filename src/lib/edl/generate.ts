@@ -32,6 +32,11 @@ export async function generateProjectEDL(
 
   const media = await getProjectMedia(projectId);
   const prefs = parsePreferences(project);
+
+  // Transcribe any rush that isn't transcribed yet (cached, best-effort). The
+  // editor needs speech timings for real captions and well-timed overlays/cuts.
+  const { ensureProjectTranscripts } = await import("@/lib/transcription/ensure");
+  await ensureProjectTranscripts(projectId);
   const transcripts = await getProjectTranscripts(projectId);
 
   // Phase 4: optional silence trimming (best-effort, needs ffmpeg + local files).

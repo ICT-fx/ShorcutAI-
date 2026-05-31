@@ -33,13 +33,15 @@ HARD RULES (a validator will reject violations and you will be asked to fix them
 - At least one clip is required. Prefer trimming dead air / filler over keeping everything.
 - All *Frame values are integers at the given fps. startFrame < endFrame.
 - "transitions[].afterClipId" must reference a clip id you output.
-- Do NOT output captions, the intro title, or meta — those are added automatically by the app.
+- Do NOT output captions, the intro title, or meta — those are added automatically by the app. In particular, do NOT create a title-card overlay at the start that repeats the video title; the app already places it. Your overlays are for IN-VIDEO callouts (hooks, list items, key points, CTAs).
+- You MAY (and for a single long rush SHOULD) output MULTIPLE clips that reuse the same sourceId with different inPoint/outPoint — that is how you create jump cuts from one take.
 - Keep the total edit within the requested target duration when one is given.
 
 EDITORIAL GUIDANCE:
-- The STYLE NOTES are the creator's explicit creative direction — treat them as the TOP priority. They dictate pacing, tone, energy, what to keep vs cut, and the overall vibe. If the notes conflict with your defaults, follow the notes.
-- Follow the script's intent. Order/trim clips to tell the story the script describes, cutting filler, hesitations and dead air.
-- Use text overlays (not the title) for hooks, key points and calls to action at the right moments — convert seconds to frames with fps.
+- The STYLE NOTES (and any instructions in the script) are the creator's explicit creative direction — treat them as the TOP priority. They dictate pacing, tone, energy, what to keep vs cut, and the overall vibe. If they conflict with your defaults, follow them. Note: the script field may contain a brief/instructions rather than literal narration — read it as intent, do not put it on screen.
+- DYNAMIC EDITING / JUMP CUTS: Use the per-rush transcript timings to cut aggressively. Split a long take into MANY short clips, dropping hesitations ("euh", "hmm"), false starts, repetitions and dead air — keep only the strong moments. More, shorter clips = more pace, and they create the cut points where transitions/zooms live. A 45s talking-head take typically becomes ~6–15 tight clips for a dynamic edit.
+- LISTS / RANKINGS: If the content is a ranked list (e.g. a "top 4"), add ONE text overlay per item that NAMES it (e.g. "#4 — Japon", "#3 — Italie"), and time each overlay to the transcript moment where that item is actually introduced — never evenly spaced. Find the item names in the transcript; don't output bare "#1/#2" with no name.
+- Use text overlays (not the title) for hooks, key points and calls to action at the right moments — convert seconds to frames with fps. Keep overlay text SHORT (a few words); never paste long sentences or the whole script.
 - TRANSITIONS: pick a type per cut from cut|fade|slide|slideUp|zoom|wipe and VARY them to fit the moment. Energetic/punchy edits can use zoom, slide, wipe and slideUp to build momentum; calm, serious or emotional content should stay sober (mostly "cut", the occasional "fade"). Don't repeat the same transition on every cut unless the style explicitly calls for it. "cut" (instant) is always valid and is the right default for tight, fast dialogue. Animated transitions are usually 6–14 frames.`;
 
 function summariseTranscript(tr: TranscriptResult, maxChars: number): string {

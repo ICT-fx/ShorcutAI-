@@ -270,9 +270,9 @@ export function Editor({ projectId }: { projectId: string }) {
           </div>
 
           <div className="panel">
-            <h2>2 · Script</h2>
+            <h2>2 · Script / intention <span className="small muted">(optionnel)</span></h2>
             <textarea
-              placeholder="Colle le script / la narration de la vidéo finale…"
+              placeholder="Décris ce que raconte la vidéo (ou laisse vide si tout est dit à l'oral). Les sous-titres viennent de l'AUDIO, pas de ce champ. Mets tes consignes de montage dans « Notes de style » plus bas."
               value={script}
               onChange={(e) => setScript(e.target.value)}
               onBlur={savePrefs}
@@ -407,7 +407,7 @@ export function Editor({ projectId }: { projectId: string }) {
               <button onClick={transcribe} disabled={!!busy || videos.length === 0}>
                 {busy === "transcribe" ? <><span className="spinner" /> Transcription…</> : "Transcrire les rushs"}
               </button>
-              <span className="small muted">Sous-titres calés au mot (optionnel, nécessite faster-whisper ou Groq).</span>
+              <span className="small muted">La transcription se lance <strong>automatiquement</strong> à la génération — ce bouton sert juste à la faire à l'avance.</span>
             </div>
             <div className="row">
               <button className="primary" onClick={() => generate("auto")} disabled={!!busy || !canGenerate}>
