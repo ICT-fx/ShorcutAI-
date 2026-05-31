@@ -82,6 +82,24 @@ export const CaptionSchema = z.object({
 });
 export type Caption = z.infer<typeof CaptionSchema>;
 
+/**
+ * A motion-graphics ELEMENT produced by a registered tool (see lib/edl/tools).
+ * `type` names the tool; `params` is open here on purpose so this contract stays
+ * free of any tool import (no circular dependency). The per-tool Zod schema in
+ * the tool's manifest validates `params` in validate.ts. Timing is absolute, in
+ * frames, like overlays/captions.
+ */
+export const ElementSchema = z.object({
+  id: z.string().min(1),
+  /** Registered tool type, e.g. "locationLowerThird". */
+  type: z.string().min(1),
+  /** Tool-specific parameters, validated against the tool's own schema. */
+  params: z.record(z.string(), z.unknown()).default({}),
+  startFrame: z.number().int().min(0),
+  endFrame: z.number().int().min(0),
+});
+export type Element = z.infer<typeof ElementSchema>;
+
 /** Concrete transition looks the renderer knows how to draw (enter animations). */
 export const TransitionTypeSchema = z.enum([
   "cut", // hard cut, no animation
@@ -136,6 +154,8 @@ export const EDLSchema = z.object({
     clips: z.array(ClipSchema),
     overlays: z.array(OverlaySchema).default([]),
     captions: z.array(CaptionSchema).default([]),
+    /** Motion-graphics elements drawn by registered tools (Phase 5). */
+    elements: z.array(ElementSchema).default([]),
   }),
   audio: AudioSchema.optional(),
   transitions: z.array(TransitionSchema).default([]),

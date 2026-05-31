@@ -7,6 +7,7 @@ import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import type { AutoEditProps } from "../lib/edl/compile";
 import { OVERLAY_TEMPLATES, type OverlayTemplateKey } from "../lib/edl/overlayTemplates";
+import { getToolComponent } from "../lib/edl/tools/components";
 import { Captions } from "./components/Captions";
 import { ClipSequence } from "./components/ClipSequence";
 import { ImageOverlay } from "./components/ImageOverlay";
@@ -19,6 +20,7 @@ export const AutoEdit: React.FC<AutoEditProps> = ({
   clips,
   overlays,
   captions,
+  elements,
   audio,
   style,
   media,
@@ -60,6 +62,18 @@ export const AutoEdit: React.FC<AutoEditProps> = ({
             ) : (
               <ImageOverlay overlay={ov} media={media[ov.content]} />
             )}
+          </Sequence>
+        );
+      })}
+
+      {/* --- Motion-graphics elements (registered tools) --- */}
+      {elements?.map((el) => {
+        const Tool = getToolComponent(el.type);
+        if (!Tool) return null; // unknown type — validation rejects these, render-safe.
+        const duration = Math.max(1, el.endFrame - el.startFrame);
+        return (
+          <Sequence key={el.id} from={el.startFrame} durationInFrames={duration} name={`element:${el.type}:${el.id}`}>
+            <Tool params={el.params as any} durationInFrames={duration} media={media} />
           </Sequence>
         );
       })}

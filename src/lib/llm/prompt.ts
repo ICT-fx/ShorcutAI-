@@ -8,6 +8,7 @@
  * the real transcript timings, and meta is set from the user's format/fps.
  */
 import type { EditPreferences, MediaInfo, TranscriptResult } from "@/lib/types";
+import { buildToolboxPrompt, toolTypeList } from "./toolbox";
 
 export const SYSTEM_PROMPT = `You are a senior short-form video editor. You are given raw clips (rushes), still images, an optional music track, the transcript of each rush (with timings), the creator's script, and editing preferences. Your job: decide the EDIT — which parts of which rushes to keep, in what order, what on-screen text overlays to add, and which transitions to use.
 
@@ -24,6 +25,9 @@ You MUST respond with a SINGLE JSON object and NOTHING else (no prose, no markdo
   "transitions": [
     { "afterClipId": "clip-1", "type": "cut|fade|slide|slideUp|zoom|wipe", "durationInFrames": <int> }
   ],
+  "elements": [
+    { "id": "el-1", "type": "<one of the AVAILABLE MOTION-GRAPHICS TOOLS listed below>", "params": { ...per that tool's PARAMS }, "startFrame": <int>, "endFrame": <int> }
+  ],
   "audio": { "musicTrackId": "<id of an AUDIO asset, optional>", "duckUnderVoice": true, "musicVolume": 0.18 }
 }
 
@@ -34,6 +38,7 @@ HARD RULES (a validator will reject violations and you will be asked to fix them
 - ALIGN every inPoint and outPoint to a natural PAUSE (one of the listed silences) or a sentence boundary — NEVER cut in the middle of a word or a phrase. A cut/transition lands exactly at a clip boundary, so a boundary placed mid-sentence will audibly chop speech. Start a clip right when a phrase begins and end it right when a phrase finishes.
 - All *Frame values are integers at the given fps. startFrame < endFrame.
 - "transitions[].afterClipId" must reference a clip id you output.
+- "elements" are motion-graphics drawn by the tools listed under AVAILABLE MOTION-GRAPHICS TOOLS. Each element's "type" MUST be one of those tool types and its "params" MUST match that tool's PARAMS exactly. Add an element ONLY when that tool's "WHEN TO USE" genuinely applies at that moment, OR when the creator explicitly asked for it. Do NOT invent tools or params that are not listed. If no tool fits, output "elements": []. startFrame < endFrame, integers at the given fps. Follow the EDIT PLAN below when one is provided.
 - Do NOT output captions, the intro title, or meta — those are added automatically by the app. In particular, do NOT create a title-card overlay at the start that repeats the video title; the app already places it. Your overlays are for IN-VIDEO callouts (hooks, list items, key points, CTAs).
 - You MAY (and for a single long rush SHOULD) output MULTIPLE clips that reuse the same sourceId with different inPoint/outPoint — that is how you create jump cuts from one take.
 - Keep the total edit within the requested target duration when one is given.
@@ -46,6 +51,18 @@ EDITORIAL GUIDANCE:
 - OVERLAY PLACEMENT: this is a vertical (9:16) talking-head — the speaker's face is in the CENTRE, so NEVER put text there. Place callouts in the UPPER area using normalized coordinates {"x":0.5,"y":...}. Section/chapter labels (e.g. "#4 — Japon") go near the top at y≈0.13. Supporting/argument lines go a bit lower but still high, y≈0.27, so they sit above the face, not on it. Use "bottom" only for the occasional lower-third. Keep a section label and its argument from overlapping (different y).
 - TRANSITIONS — KEEP IT CLEAN, NOT BUSY: hard "cut" is the backbone of a professional edit; use it for most cut points. Add the occasional "fade" between sections, and a "zoom" transition only to punch into a key reveal. Use slide/slideUp/wipe very rarely — overusing them looks messy. Animated transitions are short, ~6–10 frames.
 - IN-CLIP ZOOMS: for subtle life, set a clip's "effect" to "zoomIn" on a FEW emphasis clips (e.g. the moment each list item is revealed) — sparingly, not on every clip. This adds movement without extra cuts.`;
+
+/**
+ * The full system prompt for the EDIT phase: the stable rules above + the
+ * generated toolbox (the motion-graphics tools the AI may place as "elements").
+ * Stable across projects, so it is prompt-cached by the caller.
+ */
+export function buildEditSystemPrompt(): string {
+  return `${SYSTEM_PROMPT}
+
+AVAILABLE MOTION-GRAPHICS TOOLS (valid "elements[].type" values: ${toolTypeList()}):
+${buildToolboxPrompt()}`;
+}
 
 function summariseTranscript(tr: TranscriptResult, maxChars: number): string {
   // Compact, timestamped segments so the model can choose trim points.
@@ -95,7 +112,13 @@ export interface LlmPromptInput {
   height: number;
 }
 
-export function buildUserPrompt(input: LlmPromptInput): string {
+/**
+ * The per-project context shared by BOTH phases (plan + edit): format/pacing,
+ * the creator's brief (playbook/title/style notes), the available media, the
+ * transcripts with timings + pauses, and the script. Kept in one place so the
+ * planner and the editor reason over identical inputs.
+ */
+export function buildSharedContext(input: LlmPromptInput): string {
   const { prefs, media, transcripts, script, playbook, width, height } = input;
   const videos = media.filter((m) => m.kind === "video");
   const images = media.filter((m) => m.kind === "image");
@@ -156,6 +179,20 @@ export function buildUserPrompt(input: LlmPromptInput): string {
   lines.push("\nSCRIPT (the desired final narrative):");
   lines.push(script.trim() || "(no script provided)");
 
+  return lines.join("\n");
+}
+
+/**
+ * The EDIT-phase user prompt: shared context + (optional) the Phase-1 plan to
+ * follow + the "return JSON" instruction.
+ */
+export function buildUserPrompt(input: LlmPromptInput, plan?: string): string {
+  const lines = [buildSharedContext(input)];
+  if (plan?.trim()) {
+    lines.push(
+      `\nEDIT PLAN (produced in the planning step — FOLLOW IT; it already chose which tools/elements to use and where):\n${plan.trim()}`,
+    );
+  }
   lines.push("\nReturn ONLY the JSON edit object now.");
   return lines.join("\n");
 }

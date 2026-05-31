@@ -8,6 +8,7 @@
  */
 import type { EDL } from "./schema";
 import type { MediaInfo } from "@/lib/types";
+import { MANIFESTS } from "./tools/manifests";
 
 export interface ValidationResult {
   ok: boolean;
@@ -77,6 +78,44 @@ export function validateEDL(edl: EDL, media: MediaInfo[]): ValidationResult {
   for (const [i, cap] of edl.tracks.captions.entries()) {
     if (cap.endFrame <= cap.startFrame) {
       errors.push(`Caption #${i} has endFrame <= startFrame.`);
+    }
+  }
+
+  // --- Elements (motion-graphics tools) ---
+  const elementIds = new Set<string>();
+  for (const el of edl.tracks.elements) {
+    if (elementIds.has(el.id)) errors.push(`Duplicate element id "${el.id}".`);
+    elementIds.add(el.id);
+
+    const manifest = MANIFESTS[el.type];
+    if (!manifest) {
+      errors.push(
+        `Element "${el.id}" uses unknown tool type "${el.type}". Valid types: ${Object.keys(MANIFESTS).join(", ") || "(none)"}.`,
+      );
+      continue;
+    }
+    if (el.endFrame <= el.startFrame) {
+      errors.push(`Element "${el.id}" has endFrame <= startFrame.`);
+    }
+    if (el.endFrame > edl.meta.durationInFrames) {
+      warnings.push(
+        `Element "${el.id}" ends after the timeline (${el.endFrame} > ${edl.meta.durationInFrames}); it will be clamped.`,
+      );
+    }
+
+    const parsed = manifest.paramsSchema.safeParse(el.params);
+    if (!parsed.success) {
+      const issues = parsed.error.issues
+        .map((iss) => `${iss.path.join(".") || "params"}: ${iss.message}`)
+        .join("; ");
+      errors.push(`Element "${el.id}" (${el.type}) has invalid params — ${issues}.`);
+      continue;
+    }
+    // Optional tool-specific cross-checks (asset references, etc.).
+    if (manifest.validate) {
+      for (const msg of manifest.validate(parsed.data, { media, durationInFrames: edl.meta.durationInFrames })) {
+        errors.push(`Element "${el.id}" (${el.type}): ${msg}`);
+      }
     }
   }
 

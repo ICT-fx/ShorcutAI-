@@ -6,7 +6,7 @@
  *
  * Browser-safe: no node-only imports here.
  */
-import type { AudioConfig, Caption, Clip, EDL, Meta, Overlay, StyleConfig, Transition } from "./schema";
+import type { AudioConfig, Caption, Clip, EDL, Element, Meta, Overlay, StyleConfig, Transition } from "./schema";
 import type { MediaInfo } from "@/lib/types";
 
 export interface CompiledClip extends Clip {
@@ -25,6 +25,8 @@ export type AutoEditProps = {
   clips: CompiledClip[];
   overlays: Overlay[];
   captions: Caption[];
+  /** Motion-graphics elements (rendered by registered tools). */
+  elements: Element[];
   audio?: AudioConfig;
   style: StyleConfig;
   /** id -> media descriptor (with a fetchable url). */
@@ -76,15 +78,17 @@ export function compileEDL(edl: EDL, media: MediaInfo[]): AutoEditProps {
   const clipsEnd = cursor;
   const overlaysEnd = edl.tracks.overlays.reduce((m, o) => Math.max(m, o.endFrame), 0);
   const captionsEnd = edl.tracks.captions.reduce((m, c) => Math.max(m, c.endFrame), 0);
+  const elementsEnd = edl.tracks.elements.reduce((m, e) => Math.max(m, e.endFrame), 0);
 
   // The timeline must cover everything; clamp to at least 1 frame.
-  const durationInFrames = Math.max(1, clipsEnd, overlaysEnd, captionsEnd);
+  const durationInFrames = Math.max(1, clipsEnd, overlaysEnd, captionsEnd, elementsEnd);
 
   return {
     meta: { ...edl.meta, durationInFrames },
     clips,
     overlays: edl.tracks.overlays,
     captions: edl.tracks.captions,
+    elements: edl.tracks.elements,
     audio: edl.audio,
     style: edl.style,
     media: mediaMap,

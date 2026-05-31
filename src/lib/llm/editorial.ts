@@ -19,7 +19,8 @@ import { parseEDL, type EDL } from "@/lib/edl/schema";
 import { snapClipsToTranscripts } from "@/lib/edl/snap";
 import { TITLE_STYLES } from "@/lib/edl/titleStyles";
 import { validateEDL } from "@/lib/edl/validate";
-import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
+import { buildEditSystemPrompt, buildUserPrompt } from "./prompt";
+import { generatePlan } from "./plan";
 
 export interface LlmEditInput {
   project: Project;
@@ -42,7 +43,14 @@ interface Skeleton {
   }[];
   overlays?: any[];
   transitions?: any[];
+  elements?: any[];
   audio?: any;
+}
+
+export interface LlmEditResult {
+  edl: EDL;
+  /** Capabilities the creator explicitly asked for that no tool can deliver yet. */
+  unsupportedRequests: { request: string; reason?: string }[];
 }
 
 const toFrame = (sec: number, fps: number) => Math.max(0, Math.round(sec * fps));
@@ -125,22 +133,35 @@ function assembleEDL(skeleton: Skeleton, input: LlmEditInput): EDL {
     .map((o: any) => ({ ...o, position: safeOverlayPosition(o?.position) }));
   const overlays = [...titleOverlays, ...modelOverlays];
 
+  // Motion-graphics elements (from registered tools). Normalise frames to ints;
+  // the per-tool param schema is validated later in validateEDL.
+  const elements = (skeleton.elements ?? [])
+    .filter((e: any) => e && typeof e.type === "string")
+    .map((e: any, i: number) => ({
+      id: e.id || `el-${i + 1}`,
+      type: e.type,
+      params: e.params ?? {},
+      startFrame: Math.max(0, Math.round(Number(e.startFrame) || 0)),
+      endFrame: Math.max(1, Math.round(Number(e.endFrame) || 0)),
+    }));
+
   const clipFrames = clips.reduce((a, c) => a + toFrame(Math.max(0, c.outPoint - c.inPoint), fps), 0);
   const overlayEnd = overlays.reduce((m: number, o: any) => Math.max(m, Number(o?.endFrame) || 0), 0);
   const captionEnd = captions.reduce((m, c) => Math.max(m, c.endFrame), 0);
-  const durationInFrames = Math.max(1, clipFrames, overlayEnd, captionEnd);
+  const elementEnd = elements.reduce((m: number, e: any) => Math.max(m, e.endFrame), 0);
+  const durationInFrames = Math.max(1, clipFrames, overlayEnd, captionEnd, elementEnd);
 
   return parseEDL({
     version: 1,
     meta: { fps, width, height, durationInFrames },
-    tracks: { clips, overlays, captions },
+    tracks: { clips, overlays, captions, elements },
     audio: skeleton.audio ?? undefined,
     transitions: skeleton.transitions ?? [],
     style: { captionFont: input.prefs.captionFont, overlayTemplate: input.prefs.overlayTemplate },
   });
 }
 
-export async function generateLlmEDL(input: LlmEditInput): Promise<EDL> {
+export async function generateLlmEDL(input: LlmEditInput): Promise<LlmEditResult> {
   if (!config.llm.anthropicApiKey) {
     throw new Error("ANTHROPIC_API_KEY not set; LLM editor unavailable.");
   }
@@ -149,7 +170,7 @@ export async function generateLlmEDL(input: LlmEditInput): Promise<EDL> {
   const client = new Anthropic({ apiKey: config.llm.anthropicApiKey, maxRetries: 4 });
   const { width, height } = FORMAT_DIMENSIONS[input.prefs.format];
 
-  const userPrompt = buildUserPrompt({
+  const promptInput = {
     prefs: input.prefs,
     media: input.media,
     transcripts: input.transcripts,
@@ -157,7 +178,15 @@ export async function generateLlmEDL(input: LlmEditInput): Promise<EDL> {
     playbook: input.playbook,
     width,
     height,
-  });
+  };
+
+  // PHASE 1 — plan (best-effort; null on failure → we proceed plan-less). It
+  // chooses which tools/elements to use and surfaces unsupported requests.
+  const plan = await generatePlan(client, promptInput);
+
+  // PHASE 2 — write the EDL, following the plan when we have one.
+  const userPrompt = buildUserPrompt(promptInput, plan?.planText);
+  const editSystem = buildEditSystemPrompt();
 
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: userPrompt }];
   const maxAttempts = Math.max(1, config.llm.maxRepairAttempts + 1);
@@ -167,8 +196,8 @@ export async function generateLlmEDL(input: LlmEditInput): Promise<EDL> {
     const response = await client.messages.create({
       model: config.llm.model,
       max_tokens: 8000,
-      // Stable schema/rules cached; per-project content stays in the user turn.
-      system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+      // Stable schema/rules + toolbox cached; per-project content stays in the user turn.
+      system: [{ type: "text", text: editSystem, cache_control: { type: "ephemeral" } }],
       messages,
     });
 
@@ -193,7 +222,7 @@ export async function generateLlmEDL(input: LlmEditInput): Promise<EDL> {
 
       // Cross-check against real media; on failure, feed errors back.
       const v = validateEDL(edl, input.media);
-      if (v.ok) return edl;
+      if (v.ok) return { edl, unsupportedRequests: plan?.unsupportedRequests ?? [] };
       lastError = v.errors.join("\n- ");
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);

@@ -68,7 +68,7 @@ export async function generateProjectEDL(
           e instanceof Error ? e.message : e,
         );
       }
-      edl = await generateLlmEDL({
+      const llm = await generateLlmEDL({
         project,
         prefs,
         media,
@@ -76,7 +76,14 @@ export async function generateProjectEDL(
         script: project.script,
         playbook,
       });
+      edl = llm.edl;
       source = "llm";
+      // The creator explicitly asked for capabilities no tool can deliver yet:
+      // surface it (and it's logged in the plan step) so they know why it's absent.
+      if (llm.unsupportedRequests.length > 0) {
+        const asked = llm.unsupportedRequests.map((r) => r.request).join(", ");
+        warning = `Tu as demandé : ${asked} — pas encore disponible dans l'éditeur, le montage a été généré sans. On peut ajouter ces effets.`;
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(`LLM editor failed (${msg}); falling back to deterministic.`);
