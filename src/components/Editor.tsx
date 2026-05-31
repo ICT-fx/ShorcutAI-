@@ -375,7 +375,8 @@ export function Editor({ projectId }: { projectId: string }) {
                     onClick={() => up("captionFont", f.key)}
                     aria-pressed={prefs.captionFont === f.key}
                   >
-                    <span className="font-chip-sample">Sous-titre</span>
+                    {/* Weight 800 mirrors the burned-in caption render (Captions.tsx). */}
+                    <span className="font-chip-sample" style={{ fontWeight: 800 }}>Sous-titre</span>
                     <span className="font-chip-name">{f.label}</span>
                   </button>
                 ))}
@@ -524,7 +525,7 @@ export function Editor({ projectId }: { projectId: string }) {
             )}
             {renderUrl && (
               <p style={{ marginTop: 12 }}>
-                <a href={renderUrl} download className="primary" style={{ display: "inline-block", padding: "10px 16px", borderRadius: "var(--radius-sm)", background: "var(--lime)", color: "var(--ink)", fontWeight: 700 }}>
+                <a href={renderUrl} download className="primary" style={{ display: "inline-block", padding: "10px 16px", borderRadius: "var(--radius-sm)", background: "var(--accent)", color: "var(--on-accent)", fontWeight: 700 }}>
                   ↓ Télécharger le MP4
                 </a>
               </p>

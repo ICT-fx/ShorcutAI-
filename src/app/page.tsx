@@ -45,19 +45,62 @@ export default function HomePage() {
 
   return (
     <div className="container">
-      <div className="hero">
-        <span className="eyebrow">● Montage automatique · Remotion</span>
-        <h1>
-          De tes rushs à un <span className="accent">short monté</span>,<br />
-          automatiquement.
-        </h1>
-        <p className="sub">
-          Uploade tes rushs, colle ton script, choisis ton style — récupère un MP4 monté,
-          prévisualisé puis rendu sans toucher une timeline.
-        </p>
-      </div>
+      <section className="hero">
+        <div className="hero-glow" aria-hidden />
+        <div className="hero-blobs" aria-hidden>
+          <span className="blob blob-1" />
+          <span className="blob blob-2" />
+        </div>
 
-      <div className="panel">
+        <div className="hero-inner">
+          <span className="eyebrow">● Montage automatique · Remotion</span>
+          <h1>
+            De tes rushs à un <span className="accent">short monté</span>,<br />
+            automatiquement.
+          </h1>
+          <p className="sub">
+            Uploade tes rushs, colle ton script, choisis ton style — récupère un MP4 monté,
+            prévisualisé puis rendu sans toucher une timeline,{" "}
+            <strong>livré en quelques minutes.</strong>
+          </p>
+
+          <div className="hero-cta">
+            <a href="#new-project" className="btn btn-primary">
+              Créer mon premier short
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
+            <a href="#projects" className="btn btn-secondary">Voir mes projets</a>
+          </div>
+
+          <div className="hero-trust">
+            <span className="item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span><strong>Quelques minutes</strong>, pas des heures</span>
+            </span>
+            <span className="sep" />
+            <span className="item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <span>Zéro timeline</span>
+            </span>
+            <span className="sep" />
+            <span className="item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M9 7v10l8-5-8-5z" fill="currentColor" />
+              </svg>
+              <span>Rendu <strong>Remotion</strong></span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <div className="panel" id="new-project">
         <h2>Nouveau projet</h2>
         <div className="row">
           <div style={{ flex: 1, minWidth: 220 }}>
@@ -80,7 +123,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <h2 style={{ marginTop: 36 }}>Tes projets</h2>
+      <h2 id="projects" style={{ marginTop: 36, scrollMarginTop: 80 }}>Tes projets</h2>
       {loading ? (
         <p className="muted">Chargement…</p>
       ) : projects.length === 0 ? (

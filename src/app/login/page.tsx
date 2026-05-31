@@ -71,7 +71,7 @@ export default function LoginPage() {
     <div className="auth-shell">
       <div className="auth-card">
         <h1>
-          Shortcut<span style={{ color: "var(--lime)" }}>.</span>Edit
+          Shortcut<span style={{ color: "var(--accent)" }}>.</span>Edit
         </h1>
         <p className="sub">Connecte-toi pour monter tes vidéos automatiquement.</p>
 

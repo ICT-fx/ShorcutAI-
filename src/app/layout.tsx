@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+import { DM_Sans, Inter, Syne, Bebas_Neue, JetBrains_Mono } from "next/font/google";
 import { getCurrentUser } from "@/lib/auth";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-  variable: "--font-display",
-});
-const body = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-body" });
+// Type / design system from HERO-REPLICATION-GUIDE.md:
+//   DM Sans = body · Inter 800 = hero H1 · Syne = section headings · Bebas Neue = giant display.
+const body = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], variable: "--font-body" });
+const hero = Inter({ subsets: ["latin"], weight: ["600", "700", "800", "900"], variable: "--font-hero" });
+const heading = Syne({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--font-heading" });
+const display = Bebas_Neue({ subsets: ["latin"], weight: ["400"], variable: "--font-display" });
 const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
@@ -31,14 +31,20 @@ function BrandMark() {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   return (
-    <html lang="fr" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html
+      lang="fr"
+      className={`${body.variable} ${hero.variable} ${heading.variable} ${display.variable} ${mono.variable}`}
+    >
       <body>
-        {/* Caption-font previews in the editor (next/font handles the UI fonts). */}
+        {/* Caption-font previews in the editor. Weights mirror the actual render
+            (overlayTemplates + @remotion/google-fonts) so chips match the output:
+            Montserrat 600/700/800 · Oswald 500/700 · Poppins 600/700. next/font
+            handles the UI fonts. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Montserrat:wght@700&family=Oswald:wght@500&family=Poppins:wght@600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Montserrat:wght@600;700;800&family=Oswald:wght@500;700&family=Poppins:wght@600;700&display=swap"
         />
         <div className="topbar">
           <Link href="/" className="brand">
