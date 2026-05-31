@@ -302,3 +302,25 @@ button:not(.primary) .spinner { border-color: var(--border-strong); border-top-c
 }
 .font-chip.selected { border-color: var(--lime); background: var(--lime-soft); box-shadow: 0 0 0 3px var(--lime-soft); }
 .font-chip.selected .font-chip-name { color: var(--lime); }
+
+/* --- Overlay template preview chips --- */
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.tpl-chip {
+  display: flex; flex-direction: column; gap: 7px; padding: 8px;
+  border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--surface-2); cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+}
+.tpl-chip:hover:not(:disabled) { border-color: var(--border-strong); transform: translateY(-1px); }
+.tpl-chip .tpl-stage {
+  height: 72px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  overflow: hidden; text-align: center; padding: 6px;
+  /* Faux-video backdrop so white/outlined styles read like on real footage. */
+  background: linear-gradient(135deg, #4a4a44 0%, #232320 60%, #15150f 100%);
+}
+.tpl-chip .tpl-name {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted); text-align: center;
+}
+.tpl-chip.selected { border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-soft); }
+.tpl-chip.selected .tpl-name { color: var(--lime); }

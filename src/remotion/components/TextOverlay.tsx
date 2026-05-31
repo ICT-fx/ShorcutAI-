@@ -1,11 +1,19 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import type { Overlay } from "../../lib/edl/schema";
+import type { OverlayTemplate } from "../../lib/edl/overlayTemplates";
 import { fontFamilyFor } from "../fonts";
 import { isCoordPosition, positionContainerStyle } from "./position";
 
-/** A text overlay (title, lower-third, callout). Animation is relative to its own Sequence. */
-export const TextOverlay: React.FC<{ overlay: Overlay }> = ({ overlay }) => {
+/**
+ * A text overlay. The intro title renders from its own fields (no template); AI
+ * callouts render with the chosen `template` (TikTok-style look). Animation is
+ * relative to the overlay's own Sequence.
+ */
+export const TextOverlay: React.FC<{ overlay: Overlay; template?: OverlayTemplate }> = ({
+  overlay,
+  template,
+}) => {
   const frame = useCurrentFrame();
   const { fps, width } = useVideoConfig();
 
@@ -29,20 +37,33 @@ export const TextOverlay: React.FC<{ overlay: Overlay }> = ({ overlay }) => {
   }
 
   const coord = isCoordPosition(overlay.position) ? overlay.position : null;
-  const fontSize = overlay.fontSizePx ?? Math.round(width * 0.05);
+  const fontSize = overlay.fontSizePx ?? Math.round(width * (template?.sizeFraction ?? 0.05));
+
+  // Text outline (TikTok "contour"/"punch"). paintOrder keeps the fill on top.
+  const strokeStyle = (template?.strokeColor
+    ? {
+        WebkitTextStroke: `${(template.strokeWidthPx * width) / 1080}px ${template.strokeColor}`,
+        paintOrder: "stroke",
+      }
+    : {}) as unknown as React.CSSProperties;
+
+  const hasBox = template ? template.background !== null : true;
 
   const box: React.CSSProperties = {
     maxWidth: "84%",
     textAlign: "center",
-    fontFamily: fontFamilyFor(overlay.fontFamily),
-    fontWeight: 800,
+    fontFamily: fontFamilyFor(template?.fontKey ?? overlay.fontFamily),
+    fontWeight: template?.fontWeight ?? 800,
     fontSize,
     lineHeight: 1.15,
-    color: overlay.color ?? "white",
-    background: overlay.backgroundColor ?? "rgba(0,0,0,0.45)",
-    padding: "0.4em 0.6em",
-    borderRadius: 14,
-    textShadow: "0 2px 12px rgba(0,0,0,0.5)",
+    letterSpacing: template?.letterSpacing,
+    textTransform: template?.uppercase ? "uppercase" : undefined,
+    color: template ? template.color : overlay.color ?? "white",
+    background: template ? template.background ?? "transparent" : overlay.backgroundColor ?? "rgba(0,0,0,0.45)",
+    padding: hasBox ? "0.4em 0.7em" : "0.05em 0.1em",
+    borderRadius: template?.borderRadius ?? 14,
+    textShadow: template?.shadow ?? "0 2px 12px rgba(0,0,0,0.5)",
+    ...strokeStyle,
     ...animStyle,
   };
 

@@ -20,7 +20,7 @@ const defaultAutoEditProps: AutoEditProps = {
     },
   ],
   captions: [],
-  style: { captionFont: "montserrat" },
+  style: { captionFont: "montserrat", overlayTemplate: "punch" },
   media: {},
 };
 

@@ -6,6 +6,7 @@
 import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import type { AutoEditProps } from "../lib/edl/compile";
+import { OVERLAY_TEMPLATES, type OverlayTemplateKey } from "../lib/edl/overlayTemplates";
 import { Captions } from "./components/Captions";
 import { ClipSequence } from "./components/ClipSequence";
 import { ImageOverlay } from "./components/ImageOverlay";
@@ -22,6 +23,8 @@ export const AutoEdit: React.FC<AutoEditProps> = ({
   style,
   media,
 }) => {
+  const overlayTemplate =
+    OVERLAY_TEMPLATES[style?.overlayTemplate as OverlayTemplateKey] ?? OVERLAY_TEMPLATES.punch;
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       {/* --- Video clip track --- */}
@@ -53,7 +56,7 @@ export const AutoEdit: React.FC<AutoEditProps> = ({
             name={`overlay:${ov.id}`}
           >
             {ov.kind === "text" ? (
-              <TextOverlay overlay={ov} />
+              <TextOverlay overlay={ov} template={ov.id === "title" ? undefined : overlayTemplate} />
             ) : (
               <ImageOverlay overlay={ov} media={media[ov.content]} />
             )}

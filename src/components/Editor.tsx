@@ -5,7 +5,33 @@ import Link from "next/link";
 import { PlayerPreview } from "./PlayerPreview";
 import type { AutoEditProps } from "@/lib/edl/compile";
 import { TITLE_STYLES, TITLE_STYLE_KEYS } from "@/lib/edl/titleStyles";
+import {
+  CSS_FONT_FAMILY,
+  OVERLAY_TEMPLATES,
+  OVERLAY_TEMPLATE_KEYS,
+  type OverlayTemplate,
+} from "@/lib/edl/overlayTemplates";
 import type { EditPreferences } from "@/lib/types";
+
+/** CSS for a template's sample text in the editor preview chip (stroke scaled
+ * down for the small size). */
+function overlayChipTextStyle(t: OverlayTemplate): React.CSSProperties {
+  return {
+    fontFamily: CSS_FONT_FAMILY[t.fontKey] ?? "sans-serif",
+    fontWeight: t.fontWeight,
+    fontSize: 20,
+    lineHeight: 1.1,
+    color: t.color,
+    background: t.background ?? "transparent",
+    textTransform: t.uppercase ? "uppercase" : "none",
+    letterSpacing: t.letterSpacing,
+    textShadow: t.shadow,
+    borderRadius: t.background ? 8 : 0,
+    padding: t.background ? "5px 9px" : "0",
+    WebkitTextStroke: t.strokeColor ? `${Math.max(1, t.strokeWidthPx / 3)}px ${t.strokeColor}` : undefined,
+    paintOrder: "stroke",
+  } as React.CSSProperties;
+}
 
 /**
  * Caption-font choices shown as live previews — each chip is rendered in the
@@ -378,6 +404,28 @@ export function Editor({ projectId }: { projectId: string }) {
                     {TITLE_STYLES[k].label}
                   </button>
                 ))}
+              </div>
+            </div>
+            <div className="field">
+              <label>Style des encarts <span className="small muted">(textes ajoutés par l'IA — aperçu)</span></label>
+              <div className="tpl-grid">
+                {OVERLAY_TEMPLATE_KEYS.map((k) => {
+                  const t = OVERLAY_TEMPLATES[k];
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      className={`tpl-chip ${prefs.overlayTemplate === k ? "selected" : ""}`}
+                      onClick={() => up("overlayTemplate", k)}
+                      aria-pressed={prefs.overlayTemplate === k}
+                    >
+                      <div className="tpl-stage">
+                        <span style={overlayChipTextStyle(t)}>#1 JAPON</span>
+                      </div>
+                      <span className="tpl-name">{t.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div className="field">

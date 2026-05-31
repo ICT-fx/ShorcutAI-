@@ -131,7 +131,7 @@ function assembleEDL(skeleton: Skeleton, input: LlmEditInput): EDL {
     tracks: { clips, overlays, captions },
     audio: skeleton.audio ?? undefined,
     transitions: skeleton.transitions ?? [],
-    style: { captionFont: input.prefs.captionFont },
+    style: { captionFont: input.prefs.captionFont, overlayTemplate: input.prefs.overlayTemplate },
   });
 }
 

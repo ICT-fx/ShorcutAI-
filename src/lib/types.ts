@@ -63,6 +63,8 @@ export const EditPreferencesSchema = z.object({
     .default("montserrat"),
   /** Preset look for the intro title overlay (chosen via buttons in the UI). */
   titleStyle: z.enum(["bold", "boxed", "minimal", "kinetic"]).default("bold"),
+  /** Visual template for the AI-added text encarts (callouts). */
+  overlayTemplate: z.enum(["punch", "pastille", "contour", "neon"]).default("punch"),
   /** Drop detected silences at clip edges (Phase 4). */
   removeSilences: z.boolean().default(false),
   /**

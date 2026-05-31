@@ -119,9 +119,11 @@ export const MetaSchema = z.object({
 });
 export type Meta = z.infer<typeof MetaSchema>;
 
-/** Global styling for the render (caption font, etc.). */
+/** Global styling for the render (caption font, overlay template, etc.). */
 export const StyleSchema = z.object({
   captionFont: z.string().default("montserrat"),
+  /** Visual template key for AI text encarts (see overlayTemplates.ts). */
+  overlayTemplate: z.string().default("punch"),
 });
 export type StyleConfig = z.infer<typeof StyleSchema>;
 
@@ -137,7 +139,7 @@ export const EDLSchema = z.object({
   }),
   audio: AudioSchema.optional(),
   transitions: z.array(TransitionSchema).default([]),
-  style: StyleSchema.default({ captionFont: "montserrat" }),
+  style: StyleSchema.default({ captionFont: "montserrat", overlayTemplate: "punch" }),
 });
 export type EDL = z.infer<typeof EDLSchema>;
 

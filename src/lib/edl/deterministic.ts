@@ -148,7 +148,7 @@ export function generateDeterministicEDL(input: DeterministicInput): EDL {
       ? { musicTrackId: prefs.musicTrackId, duckUnderVoice: prefs.duckMusic, musicVolume: 0.18 }
       : undefined,
     transitions,
-    style: { captionFont: prefs.captionFont },
+    style: { captionFont: prefs.captionFont, overlayTemplate: prefs.overlayTemplate },
   };
 
   // Round-trip through the schema so defaults are applied and we fail loudly
