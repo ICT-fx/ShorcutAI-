@@ -16,6 +16,7 @@ import { estimateLlmCost } from "@/lib/cost";
 import { FORMAT_DIMENSIONS, type EditPreferences, type MediaInfo, type TranscriptResult } from "@/lib/types";
 import { buildCaptionsFromScript, buildCaptionsFromTranscripts } from "@/lib/edl/captions";
 import { parseEDL, type EDL } from "@/lib/edl/schema";
+import { snapClipsToTranscripts } from "@/lib/edl/snap";
 import { TITLE_STYLES } from "@/lib/edl/titleStyles";
 import { validateEDL } from "@/lib/edl/validate";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
@@ -78,7 +79,7 @@ function assembleEDL(skeleton: Skeleton, input: LlmEditInput): EDL {
   const fps = input.prefs.fps;
   const { width, height } = FORMAT_DIMENSIONS[input.prefs.format];
 
-  const clips = (skeleton.clips ?? []).map((c, i) => ({
+  const rawClips = (skeleton.clips ?? []).map((c, i) => ({
     id: c.id || `clip-${i + 1}`,
     sourceId: c.sourceId,
     inPoint: Number(c.inPoint) || 0,
@@ -86,6 +87,8 @@ function assembleEDL(skeleton: Skeleton, input: LlmEditInput): EDL {
     volume: c.volume,
     effect: c.effect,
   }));
+  // Snap each cut to the nearest word/pause boundary so we never chop a phrase.
+  const clips = snapClipsToTranscripts(rawClips, input.transcripts);
 
   // Captions are NOT taken from the model — always from real timings.
   const totalSec = clips.reduce((a, c) => a + Math.max(0, c.outPoint - c.inPoint), 0);
