@@ -198,6 +198,7 @@ export function Editor({ projectId }: { projectId: string }) {
     setMeta({ fps: data.fps, durationInFrames: data.durationInFrames, width: data.width, height: data.height });
     setEdlSource(data.source);
     setValidation(data.validation);
+    if (data.warning) setMessage(`⚠️ ${data.warning}`);
     setRenderUrl(null);
     setBusy(null);
   }

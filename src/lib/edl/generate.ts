@@ -21,6 +21,8 @@ export interface GenerateResult {
   source: "deterministic" | "llm";
   validation: ValidationResult;
   props: AutoEditProps;
+  /** Set when the AI editor was attempted but failed and we fell back to rules. */
+  warning?: string;
 }
 
 export async function generateProjectEDL(
@@ -46,6 +48,7 @@ export async function generateProjectEDL(
 
   let edl: EDL;
   let source: "deterministic" | "llm";
+  let warning: string | undefined;
 
   if (useLlm) {
     try {
@@ -64,9 +67,8 @@ export async function generateProjectEDL(
       });
       source = "llm";
     } catch (err) {
-      console.warn(
-        `LLM editor failed (${err instanceof Error ? err.message : err}); falling back to deterministic.`,
-      );
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`LLM editor failed (${msg}); falling back to deterministic.`);
       edl = generateDeterministicEDL({
         media,
         preferences: prefs,
@@ -76,6 +78,8 @@ export async function generateProjectEDL(
         trimBounds,
       });
       source = "deterministic";
+      warning =
+        "L'IA n'a pas pu produire le montage (surcharge ou erreur temporaire), un montage de secours simplifié a été généré — SANS encarts ni coupes dynamiques. Relance « Générer le montage » pour réessayer l'IA.";
     }
   } else {
     edl = generateDeterministicEDL({
@@ -101,7 +105,7 @@ export async function generateProjectEDL(
     },
   });
 
-  return { edl, source, validation, props };
+  return { edl, source, validation, props, warning };
 }
 
 /**

@@ -144,7 +144,9 @@ export async function generateLlmEDL(input: LlmEditInput): Promise<EDL> {
   if (!config.llm.anthropicApiKey) {
     throw new Error("ANTHROPIC_API_KEY not set; LLM editor unavailable.");
   }
-  const client = new Anthropic({ apiKey: config.llm.anthropicApiKey });
+  // maxRetries covers transient API errors (429 rate limit, 500/529 overloaded,
+  // connection blips) so a hiccup doesn't drop us to the bare deterministic edit.
+  const client = new Anthropic({ apiKey: config.llm.anthropicApiKey, maxRetries: 4 });
   const { width, height } = FORMAT_DIMENSIONS[input.prefs.format];
 
   const userPrompt = buildUserPrompt({

@@ -22,6 +22,7 @@ export async function POST(req: Request, { params }: Ctx) {
     return NextResponse.json({
       source: result.source,
       validation: result.validation,
+      warning: result.warning,
       props: result.props,
       durationInFrames: result.props.meta.durationInFrames,
       fps: result.props.meta.fps,
