@@ -54,14 +54,21 @@ export function compileEDL(edl: EDL, media: MediaInfo[]): AutoEditProps {
     const durationInFrames = framesFor(clip.outPoint - clip.inPoint, fps);
     const prev = index > 0 ? edl.tracks.clips[index - 1] : undefined;
     const incoming = prev ? transitionAfter.get(prev.id) : undefined;
+    const transitionIn =
+      incoming && incoming.type !== "cut"
+        ? { type: incoming.type, durationInFrames: incoming.durationInFrames }
+        : undefined;
+    // Avoid zoom-on-zoom: if the clip is entered by a zoom transition, drop its
+    // own in-clip push-in so the motion doesn't stack.
+    const effect = transitionIn?.type === "zoom" && (clip.effect === "zoomIn" || clip.effect === "zoomOut")
+      ? "none"
+      : clip.effect;
     clips.push({
       ...clip,
+      effect,
       fromFrame: cursor,
       durationInFrames,
-      transitionIn:
-        incoming && incoming.type !== "cut"
-          ? { type: incoming.type, durationInFrames: incoming.durationInFrames }
-          : undefined,
+      transitionIn,
     });
     cursor += durationInFrames;
   });

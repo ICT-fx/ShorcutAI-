@@ -30,7 +30,8 @@ You MUST respond with a SINGLE JSON object and NOTHING else (no prose, no markdo
 HARD RULES (a validator will reject violations and you will be asked to fix them):
 - "sourceId" MUST be one of the provided VIDEO asset ids. Image overlays' "content" MUST be a provided IMAGE asset id. "musicTrackId" MUST be a provided AUDIO asset id.
 - 0 <= inPoint < outPoint <= the source's duration (seconds). Never exceed the duration.
-- At least one clip is required. Prefer trimming dead air / filler over keeping everything.
+- At least one clip is required. Clips do NOT need to be contiguous and you must NOT keep the whole take: actively DROP silences/dead air, filler ("euh", "bah"), false starts, repetitions and weak/boring passages. It is expected and correct to leave gaps in the source timeline where you removed material.
+- ALIGN every inPoint and outPoint to a natural PAUSE (one of the listed silences) or a sentence boundary — NEVER cut in the middle of a word or a phrase. A cut/transition lands exactly at a clip boundary, so a boundary placed mid-sentence will audibly chop speech. Start a clip right when a phrase begins and end it right when a phrase finishes.
 - All *Frame values are integers at the given fps. startFrame < endFrame.
 - "transitions[].afterClipId" must reference a clip id you output.
 - Do NOT output captions, the intro title, or meta — those are added automatically by the app. In particular, do NOT create a title-card overlay at the start that repeats the video title; the app already places it. Your overlays are for IN-VIDEO callouts (hooks, list items, key points, CTAs).
@@ -60,6 +61,29 @@ function summariseTranscript(tr: TranscriptResult, maxChars: number): string {
   return out || "(no speech detected)";
 }
 
+/** Notable silences (dead air) from gaps between consecutive words — ideal cut
+ * points and the first thing to remove for a dynamic edit. */
+function computePauses(tr: TranscriptResult, minGapSec = 0.45): Array<[number, number]> {
+  const words = tr.words ?? [];
+  const pauses: Array<[number, number]> = [];
+  if (words.length === 0) return pauses;
+  if (words[0].start >= minGapSec) pauses.push([0, words[0].start]);
+  for (let i = 1; i < words.length; i++) {
+    const gap = words[i].start - words[i - 1].end;
+    if (gap >= minGapSec) pauses.push([words[i - 1].end, words[i].start]);
+  }
+  const last = words[words.length - 1].end;
+  if (tr.durationSec && tr.durationSec - last >= minGapSec) pauses.push([last, tr.durationSec]);
+  return pauses;
+}
+
+// How hard to trim, by pacing preference.
+const TRIM_GUIDANCE: Record<EditPreferences["pace"], string> = {
+  slow: "PACING slow: keep a calm, breathable rhythm — trim only clear dead air and obvious mistakes; longer clips are fine.",
+  medium: "PACING medium: trim dead air, filler and the weaker passages; the edit should be tighter than the raw footage.",
+  fast: "PACING fast / very dynamic: be RUTHLESS. Cut every silence, filler word, false start, repetition and any passage that isn't strong. The final edit should be CLEARLY SHORTER than the raw footage (roughly half to two-thirds of it). Many short punchy clips.",
+};
+
 export interface LlmPromptInput {
   prefs: EditPreferences;
   media: MediaInfo[];
@@ -86,6 +110,7 @@ export function buildUserPrompt(input: LlmPromptInput): string {
       `PACING: ${prefs.pace}. DEFAULT TRANSITION: ${prefs.transition} (${prefs.transitionDurationFrames} frames) — use it as the default, but you may vary when it genuinely serves the edit.`,
     );
   }
+  lines.push(TRIM_GUIDANCE[prefs.pace]);
   if (prefs.title.trim()) lines.push(`TITLE: ${prefs.title.trim()}`);
   if (prefs.styleNotes.trim()) lines.push(`STYLE NOTES: ${prefs.styleNotes.trim()}`);
 
@@ -111,6 +136,13 @@ export function buildUserPrompt(input: LlmPromptInput): string {
       if (!tr) continue;
       lines.push(`\n# rush ${v.id}`);
       lines.push(summariseTranscript(tr, 2000));
+      const pauses = computePauses(tr);
+      if (pauses.length) {
+        lines.push(
+          `PAUSES / DEAD AIR in ${v.id} (cut on these, and drop the long ones): ` +
+            pauses.map(([s, e]) => `[${s.toFixed(1)}-${e.toFixed(1)}]`).join(" "),
+        );
+      }
     }
   }
 

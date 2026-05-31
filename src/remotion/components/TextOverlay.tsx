@@ -51,11 +51,13 @@ export const TextOverlay: React.FC<{ overlay: Overlay }> = ({ overlay }) => {
       <AbsoluteFill>
         <div
           style={{
+            // Spread box FIRST so the centering transform below isn't clobbered
+            // by the animation transform that box carries (via ...animStyle).
+            ...box,
             position: "absolute",
             left: `${coord.x * 100}%`,
             top: `${coord.y * 100}%`,
             transform: `translate(-50%, -50%) ${animStyle.transform ?? ""}`,
-            ...box,
           }}
         >
           {overlay.content}
