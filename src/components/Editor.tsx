@@ -71,6 +71,7 @@ export function Editor({ projectId }: { projectId: string }) {
   const [renderUrl, setRenderUrl] = useState<string | null>(null);
   const [renderProgress, setRenderProgress] = useState<number | null>(null);
   const [drag, setDrag] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   async function reload() {
@@ -403,20 +404,36 @@ export function Editor({ projectId }: { projectId: string }) {
         <div>
           <div className="panel">
             <h2>4 · Générer le montage</h2>
-            <div className="row" style={{ marginBottom: 12 }}>
-              <button onClick={transcribe} disabled={!!busy || videos.length === 0}>
-                {busy === "transcribe" ? <><span className="spinner" /> Transcription…</> : "Transcrire les rushs"}
-              </button>
-              <span className="small muted">La transcription se lance <strong>automatiquement</strong> à la génération — ce bouton sert juste à la faire à l'avance.</span>
-            </div>
             <div className="row">
               <button className="primary" onClick={() => generate("auto")} disabled={!!busy || !canGenerate}>
                 {busy === "generate" ? <><span className="spinner" /> Génération…</> : "Générer le montage"}
               </button>
-              <button onClick={() => generate("deterministic")} disabled={!!busy || !canGenerate}>Déterministe</button>
-              <button onClick={() => generate("llm")} disabled={!!busy || !canGenerate}>Forcer l'IA</button>
             </div>
             {!canGenerate && <p className="small muted" style={{ marginTop: 10 }}>Uploade au moins un rush vidéo pour générer un montage.</p>}
+
+            <button
+              type="button"
+              className="link-toggle small muted"
+              onClick={() => setAdvanced((v) => !v)}
+              style={{ marginTop: 12, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+            >
+              {advanced ? "▾ Masquer les options avancées" : "▸ Options avancées"}
+            </button>
+            {advanced && (
+              <div className="advanced-box" style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border, #2a2a2a)" }}>
+                <div className="row" style={{ marginBottom: 10 }}>
+                  <button onClick={() => generate("deterministic")} disabled={!!busy || !canGenerate}>Déterministe</button>
+                  <button onClick={() => generate("llm")} disabled={!!busy || !canGenerate}>Forcer l'IA</button>
+                  <span className="small muted">Force le moteur à base de règles ou l'IA, au lieu du choix automatique.</span>
+                </div>
+                <div className="row">
+                  <button onClick={transcribe} disabled={!!busy || videos.length === 0}>
+                    {busy === "transcribe" ? <><span className="spinner" /> Transcription…</> : "Transcrire les rushs"}
+                  </button>
+                  <span className="small muted">La transcription se lance <strong>automatiquement</strong> à la génération — ce bouton sert juste à la faire à l'avance.</span>
+                </div>
+              </div>
+            )}
 
             {validation && validation.errors.length > 0 && (
               <div className="error-box" style={{ marginTop: 12 }}>

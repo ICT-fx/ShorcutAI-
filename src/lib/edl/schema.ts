@@ -50,6 +50,8 @@ export const ClipSchema = z.object({
   outPoint: z.number().min(0),
   /** Optional per-clip volume (0..1). Defaults to 1. */
   volume: z.number().min(0).max(1).optional(),
+  /** Optional subtle in-clip camera move (Ken Burns style push-in/out). */
+  effect: z.enum(["none", "zoomIn", "zoomOut"]).optional(),
 });
 export type Clip = z.infer<typeof ClipSchema>;
 

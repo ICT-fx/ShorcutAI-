@@ -22,10 +22,13 @@ import { TITLE_STYLES } from "./titleStyles";
  * deterministic editor (the LLM picks its own). Slow stays sober; fast gets
  * punchy and varied so the cut feels dynamic. Rotated across consecutive cuts.
  */
+// Kept deliberately light: clean cuts are the backbone, with the occasional
+// fade and an emphasis zoom. Busy slide/wipe spam reads as "messy", so it's out
+// of the default rotation (still available as an explicit forced choice).
 const AUTO_TRANSITION_POOLS: Record<EditPreferences["pace"], TransitionType[]> = {
-  slow: ["fade"],
-  medium: ["fade", "slide", "fade", "slideUp"],
-  fast: ["zoom", "slide", "wipe", "slideUp"],
+  slow: ["cut", "fade"],
+  medium: ["cut", "cut", "fade", "zoom"],
+  fast: ["cut", "zoom", "cut", "fade"],
 };
 
 export interface DeterministicInput {
@@ -66,6 +69,9 @@ export function generateDeterministicEDL(input: DeterministicInput): EDL {
       inPoint,
       outPoint: Math.max(outPoint, inPoint + 0.1),
       volume: 1,
+      // A gentle push-in on every other clip (and any single clip) for life,
+      // unless the pace is explicitly slow.
+      effect: prefs.pace !== "slow" && i % 2 === 0 ? ("zoomIn" as const) : undefined,
     };
   });
 

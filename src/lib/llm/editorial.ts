@@ -29,13 +29,37 @@ export interface LlmEditInput {
 }
 
 interface Skeleton {
-  clips: { id: string; sourceId: string; inPoint: number; outPoint: number; volume?: number }[];
+  clips: {
+    id: string;
+    sourceId: string;
+    inPoint: number;
+    outPoint: number;
+    volume?: number;
+    effect?: "none" | "zoomIn" | "zoomOut";
+  }[];
   overlays?: any[];
   transitions?: any[];
   audio?: any;
 }
 
 const toFrame = (sec: number, fps: number) => Math.max(0, Math.round(sec * fps));
+
+/**
+ * Keep in-video overlays out of the speaker's face. In a 9:16 talking-head the
+ * vertical centre band is where the face sits, so "center" (or any normalized y
+ * in that band) is remapped to the upper area. "top"/"bottom" and upper/lower
+ * coords are left as the model intended.
+ */
+function safeOverlayPosition(pos: unknown): unknown {
+  if (pos === "center") return { x: 0.5, y: 0.18 };
+  if (pos && typeof pos === "object") {
+    const p = pos as { x?: number; y?: number };
+    if (typeof p.y === "number" && p.y >= 0.34 && p.y <= 0.74) {
+      return { x: typeof p.x === "number" ? p.x : 0.5, y: 0.2 };
+    }
+  }
+  return pos;
+}
 
 function extractJson(text: string): unknown {
   // Be tolerant of accidental markdown fences or surrounding prose.
@@ -58,6 +82,7 @@ function assembleEDL(skeleton: Skeleton, input: LlmEditInput): EDL {
     inPoint: Number(c.inPoint) || 0,
     outPoint: Number(c.outPoint) || 0,
     volume: c.volume,
+    effect: c.effect,
   }));
 
   // Captions are NOT taken from the model — always from real timings.
@@ -88,8 +113,11 @@ function assembleEDL(skeleton: Skeleton, input: LlmEditInput): EDL {
       backgroundColor: preset.backgroundColor,
     });
   }
-  // Drop any title the model produced anyway, then prepend ours.
-  const modelOverlays = (skeleton.overlays ?? []).filter((o: any) => o?.id !== "title");
+  // Drop any title the model produced anyway, then prepend ours. Repositioning
+  // keeps callouts off the speaker's face.
+  const modelOverlays = (skeleton.overlays ?? [])
+    .filter((o: any) => o?.id !== "title")
+    .map((o: any) => ({ ...o, position: safeOverlayPosition(o?.position) }));
   const overlays = [...titleOverlays, ...modelOverlays];
 
   const clipFrames = clips.reduce((a, c) => a + toFrame(Math.max(0, c.outPoint - c.inPoint), fps), 0);
