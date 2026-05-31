@@ -45,7 +45,8 @@ const prefs = EditPreferencesSchema.parse({
   pace: "fast",
   captions: true,
   title: "Mon voyage",
-  styleNotes: "Montre une carte animée avec un avion qui relie les pays quand je parle des destinations.",
+  styleNotes:
+    "Sous-titres sur toute la vidéo. Titres animés 'Top 2 / Top 1 + nom du pays' en plein écran stylisé. Zooms dynamiques sur les moments clés. Et un avion qui passe sur la vidéo à chaque nouveau pays.",
 });
 
 async function main() {
@@ -73,11 +74,17 @@ async function main() {
   console.log(`unsupportedRequests: ${unsupportedRequests.length}`);
   for (const r of unsupportedRequests) console.log(`    - "${r.request}"${r.reason ? ` — ${r.reason}` : ""}`);
 
+  // Core capabilities must NEVER be flagged unsupported (the bug we fixed).
+  const unsupportedText = unsupportedRequests.map((r) => `${r.request} ${r.reason ?? ""}`.toLowerCase()).join(" | ");
+  const wronglyFlagged = ["sous-titre", "subtitle", "caption", "zoom", "titre", "title"].filter((w) => unsupportedText.includes(w));
+  const flagsPlane = /avion|plane|carte|map|flight/.test(unsupportedText);
+
   console.log("\n--- assertions ---");
   const checks: [string, boolean][] = [
     ["produced at least one clip", edl.tracks.clips.length > 0],
     ["placed at least one locationLowerThird", locEls.length > 0],
-    ["surfaced the unsupported map request", unsupportedRequests.length > 0],
+    ["flagged the plane/map as unsupported", flagsPlane],
+    [`did NOT wrongly flag core features as unsupported (found: ${wronglyFlagged.join(", ") || "none"})`, wronglyFlagged.length === 0],
   ];
   let failed = 0;
   for (const [name, ok] of checks) {
